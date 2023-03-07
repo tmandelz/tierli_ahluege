@@ -7,7 +7,8 @@ from PIL import Image
 import pytorch_lightning as pl
 # %%
 class ImagesDataset(Dataset):
-    """Reads in an image, transforms pixel values, and serves
+    """
+    Reads in an image, transforms pixel values, and serves
     a dictionary containing the image id, image tensors, and label.
     """
 
@@ -17,7 +18,7 @@ class ImagesDataset(Dataset):
         self.transform = transform
 
     def __getitem__(self, index:int):
-        image = Image.open("../competition_data/"+ self.data.iloc[index]["filepath"]).convert("RGB")
+        image = Image.open("../competition_data/" + self.data.iloc[index]["filepath"]).convert("RGB")
         image = self.transform(image)
         image_id = self.data.index[index]
         # if we don't have labels (e.g. for test set) just return the image and image id
@@ -48,7 +49,7 @@ class DataModule(pl.LightningDataModule):
         train_y,train_x,val_y,val_x = self.train_test_split(train_features,train_labels)
 
         # prepare transforms
-        self.val = ImagesDataset(train_x,test_transform,train_y)
+        self.train = ImagesDataset(train_x,test_transform,train_y)
         self.val = ImagesDataset(val_x,test_transform,val_y)
         self.test = ImagesDataset(test_features,test_transform)
         
