@@ -6,6 +6,12 @@ from torchvision import transforms
 from PIL import Image
 import pytorch_lightning as pl
 # %%
+basic_transformer = transforms.Compose([
+                transforms.Resize((224, 224)),
+                transforms.ToTensor(),
+                transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))
+                ])
+# %%
 class ImagesDataset(Dataset):
     """
     Reads in an image, transforms pixel values, and serves
@@ -13,11 +19,19 @@ class ImagesDataset(Dataset):
     """
 
     def __init__(self, x_df:pd.DataFrame,transform:transforms,y_df:pd.DataFrame=None):
+        """
+        :param pd.DataFrame x_df: links of the jpg
+        :param transforms transform: for basic transformation (like normalisation)
+        :param pd.DataFrame y_df: labels
+        """
         self.data = x_df
         self.label = y_df
         self.transform = transform
 
     def __getitem__(self, index:int):
+        """
+        :param int index: index of the data path
+        """
         image = Image.open("../competition_data/" + self.data.iloc[index]["filepath"]).convert("RGB")
         image = self.transform(image)
         image_id = self.data.index[index]
@@ -35,29 +49,33 @@ class ImagesDataset(Dataset):
 
 class DataModule(pl.LightningDataModule):  
     def __init__(self, 
-                test_transform:transforms,
-                train_transform:transforms,
-                train_features_path="../competition_data/train_features.csv",
-                test_features_path="../competition_data/test_features.csv",
-                train_labels_path="../competition_data/train_labels.csv"):
+                train_features_path:str="../competition_data/train_features.csv",
+                val_features_path:str="../competition_data/val_features.csv",
+                test_features_path:str="../competition_data/test_features.csv",
+                train_labels_path:str="../competition_data/train_labels.csv",
+                val_labels_path:str="../competition_data/val_labels.csv",
+                basic_transform:transforms = basic_transformer):
+        """
+        Jan
+        :param str train_features_path:
+        :param str val_features_path:
+        :param str test_features_path:
+        :param str train_labels_path:
+        :param str val_labels_path:
+        :param transforms basic_transform: basic tranformation -> default resize(224,224), ToTensor, standardize
+        """
         # load_data
         train_features = pd.read_csv(train_features_path, index_col="id")
+        val_features = pd.read_csv(val_features_path, index_col="id")
         test_features = pd.read_csv(test_features_path, index_col="id")
+
         train_labels = pd.read_csv(train_labels_path, index_col="id")
-        
-        # train val split
-        train_y,train_x,val_y,val_x = self.train_test_split(train_features,train_labels)
+        val_labels = pd.read_csv(val_labels_path, index_col="id")
 
         # prepare transforms
-        self.train = ImagesDataset(train_x,test_transform,train_y)
-        self.val = ImagesDataset(val_x,test_transform,val_y)
-        self.test = ImagesDataset(test_features,test_transform)
-        
-        #self.train, self.val = self.train_test_split(train_data)
-    @staticmethod
-    def train_test_split(features:pd.DataFrame,labels:pd.DataFrame):
-        # TODO define split
-        return random_split(features, [55000, 5000])
+        self.train = ImagesDataset(train_features,basic_transform,train_labels)
+        self.val = ImagesDataset(val_features,basic_transform,val_labels)
+        self.test = ImagesDataset(test_features,basic_transform)
     
     def train_dataloader(self):
         return DataLoader(self.train, batch_size=64)
