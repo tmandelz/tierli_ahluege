@@ -5,10 +5,10 @@ import torch.nn as nn
 import pytorch_lightning as pl
 import numpy as np
 import wandb
-import tqdm
+from tqdm import tqdm
 from torch.utils.data import DataLoader
-from data_modules import DataModule
-from evaluation import Evaluation
+from libraries.data_modules import DataModule
+from libraries.evaluation import Evaluation
 
 # %%
 def set_seed(seed:int=42):
@@ -41,13 +41,13 @@ class del_model:
         self.test_loader = data_model.test_dataloader()
         self.model = model
         self.device = device
-        self.evaluation = Evaluation(device,)
+        self.evaluation = Evaluation(device)
     def train_model(self,
                     optimizer:torch.optim,
                     modeltyp:str,
                     run_name:str,
                     num_epochs:int,
-                    loss_module:nn=nn.CrossEntropyLoss,
+                    loss_module:nn=nn.CrossEntropyLoss(),
                     test_model:bool=False
                     ):
         """
@@ -63,8 +63,8 @@ class del_model:
         # wandb setup
         set_seed()
         run = wandb.init(
-            project="Deep Learning MC1",
-            entity="jan-zwicky",
+            project="competition",
+            entity="deeptier",
             name=run_name,
             config={
             "learning_rate":optimizer.defaults["lr"],
@@ -74,17 +74,18 @@ class del_model:
             )
         # training
         self.model.train()
+        self.model.to(device)
         if test_model:
             self.train_loader = [next(iter(self.train_loader))]
         for epoch in tqdm(range(num_epochs)):
             loss_train = np.array([])
-            label_train_data = np.array([])
+            label_train_data = np.empty((0, 8))
             pred_train_data = np.array([])
-            for data_inputs, data_labels in self.train_loader:
+            for batch in self.train_loader:
                 
                 # calc gradient
-                data_inputs = data_inputs.to(device)
-                data_labels = data_labels.to(device)
+                data_inputs = batch["image"].to(device)
+                data_labels = batch["label"].to(device)
 
                 preds = self.model(data_inputs)
                 loss = loss_module(preds, data_labels)
@@ -108,7 +109,7 @@ class del_model:
         self.evaluation.per_model(label_val,pred_val)
 
         # prediction off the test set
-        self.prediction_test = self.predict(self.test_loader)
+        self.prediction_test,_ = self.predict(self.model,self.test_loader)
 
     def predict(self,model:nn.Module,data_loader:DataLoader):
         """
@@ -118,16 +119,19 @@ class del_model:
         :param DataLoader data_loader: data for a prediction
         """
         model.eval()
-        predictions = np.array([])
-        true_labels = np.array([])
+        predictions = np.empty((0, 8))
+        true_labels = np.empty((0, 8))
         with torch.no_grad(): # Deactivate gradients for the following code
-            for data_inputs, data_labels in data_loader:
+            for batch in data_loader:
 
                 # Determine prediction of model
-                data_inputs, data_labels = data_inputs.to(self.device), data_labels.to(self.device)
+                data_inputs = batch["image"].to(self.device)
+                
                 preds = model(data_inputs)
                 preds = torch.sigmoid(preds)
-                predictions = np.concatenate((predictions,torch.argmax(preds, 1).data.cpu().numpy()),axis=0)
-                true_labels = np.concatenate((true_labels,data_labels.data.cpu().numpy()),axis=0)
+                predictions = np.concatenate((predictions,preds.data.cpu().numpy()),axis=0)
+                if len(batch) == 3:                    
+                    data_labels = batch["label"].to(self.device)
+                    true_labels = np.concatenate((true_labels,data_labels.data.cpu().numpy()),axis=0)
         model.train()
         return predictions,true_labels

@@ -11,6 +11,7 @@ basic_transformer = transforms.Compose([
                 transforms.ToTensor(),
                 transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))
                 ])
+
 # %%
 class ImagesDataset(Dataset):
     """
@@ -32,7 +33,7 @@ class ImagesDataset(Dataset):
         """
         :param int index: index of the data path
         """
-        image = Image.open("../competition_data/" + self.data.iloc[index]["filepath"]).convert("RGB")
+        image = Image.open("./competition_data/" + self.data.iloc[index]["filepath"]).convert("RGB")
         image = self.transform(image)
         image_id = self.data.index[index]
         # if we don't have labels (e.g. for test set) just return the image and image id
@@ -49,11 +50,11 @@ class ImagesDataset(Dataset):
 
 class DataModule(pl.LightningDataModule):  
     def __init__(self, 
-                train_features_path:str="../competition_data/train_features.csv",
-                val_features_path:str="../competition_data/val_features.csv",
-                test_features_path:str="../competition_data/test_features.csv",
-                train_labels_path:str="../competition_data/train_labels.csv",
-                val_labels_path:str="../competition_data/val_labels.csv",
+                train_features_path:str="./competition_data/train_features.csv",
+                val_features_path:str="./competition_data/val_features.csv",
+                test_features_path:str="./competition_data/test_features.csv",
+                train_labels_path:str="./competition_data/train_labels.csv",
+                val_labels_path:str="./competition_data/val_labels.csv",
                 basic_transform:transforms = basic_transformer):
         """
         Jan
