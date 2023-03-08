@@ -28,20 +28,21 @@ def set_seed(seed:int=42):
 # %%
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 class del_model:
-    def __init__(self,data_model:DataModule,model:nn.Module,device:torch.device=device) -> None:
+    def __init__(self,data_model:DataModule,model:nn.Module,device:torch.device=device,batchsize_train_data:int=64) -> None:
         """
         Jan
         Load the train/test/val data.
         :param DataModule data_model: instance where the 3 dataloader are available.
         :param nn.Module model: pytorch deep learning module
         :param torch.device device: used device for training
+        :param int batchsize: batchsize of the training data
         """
-        self.train_loader = data_model.train_dataloader()
+        self.train_loader = data_model.train_dataloader(batchsize_train_data)
         self.val_loader = data_model.val_dataloader()
         self.test_loader = data_model.test_dataloader()
         self.model = model
         self.device = device
-        self.evaluation = Evaluation(device)
+        self.evaluation = Evaluation()
     def train_model(self,
                     optimizer:torch.optim,
                     modeltyp:str,
@@ -94,16 +95,17 @@ class del_model:
                 loss.backward()
                 optimizer.step()
                 
+                self.evaluation.per_batch(loss)
                 # data for evaluation
                 label_train_data = np.concatenate((label_train_data,data_labels.data.cpu().numpy()),axis=0)
-                predict_train = torch.argmax(torch.sigmoid(preds), 1).data.cpu().numpy()
+                predict_train = torch.argmax(preds, 1).data.cpu().numpy()
                 pred_train_data = np.concatenate((pred_train_data,predict_train),axis=0)
                 loss_train = np.append(loss_train,loss.item())
 
             # wandb per epoch
             pred_val,label_val = self.predict(self.model,self.val_loader)
             loss_val = loss_module(torch.tensor(pred_val), torch.tensor(label_val))
-            self.evaluation.per_epoch(loss_train.mean(),pred_train_data,label_train_data,loss_val,pred_val,label_val)
+            self.evaluation.per_epoch(loss_train.mean(),pred_train_data,label_train_data,loss_val,np.argmax(pred_val, axis=1),label_val)
                     
         # wandb per run
         self.evaluation.per_model(label_val,pred_val)
