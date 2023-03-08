@@ -37,6 +37,7 @@ class del_model:
         :param torch.device device: used device for training
         :param int batchsize: batchsize of the training data
         """
+        self.data_model = data_model
         self.train_loader = data_model.train_dataloader(batchsize_train_data)
         self.val_loader = data_model.val_dataloader()
         self.test_loader = data_model.test_dataloader()
@@ -50,7 +51,7 @@ class del_model:
                     num_epochs:int,
                     loss_module:nn=nn.CrossEntropyLoss(),
                     test_model:bool=False
-                    ):
+                    ) -> None:
         """
         Jan
         To train a pytorch model.
@@ -108,7 +109,7 @@ class del_model:
             self.evaluation.per_epoch(loss_train.mean(),pred_train_data,label_train_data,loss_val,np.argmax(pred_val, axis=1),label_val)
                     
         # wandb per run
-        self.evaluation.per_model(label_val,pred_val)
+        self.evaluation.per_model(label_val,pred_val,self.data_model.val.data)
 
         # prediction off the test set
         self.prediction_test,_ = self.predict(self.model,self.test_loader)
@@ -119,6 +120,9 @@ class del_model:
         Prediction for a given model and dataset
         :param nn.Module model: pytorch deep learning module
         :param DataLoader data_loader: data for a prediction
+
+        :return: predictions and true labels
+        :rtype: np.array, np.array
         """
         model.eval()
         predictions = np.empty((0, 8))

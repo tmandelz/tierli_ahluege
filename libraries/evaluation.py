@@ -2,8 +2,12 @@
 import torch
 import pytorch_lightning as pl
 import numpy as np
+import pandas as pd
 import wandb
 from sklearn.metrics import f1_score
+import matplotlib.pyplot as plt
+from PIL import Image
+
 
 # %%
 classes = ["antelope_duiker","bird","blank","civet_genet","hog","leopard","monkey_prosimian","rodent"]
@@ -36,31 +40,51 @@ class Evaluation():
         :param np.array pred_val: prediction of the validation
         :param np.array label_val: labels of the validation
         """
-        
-        wandb.log({"Loss train":loss_train,
-                   "Loss val": loss_val})
-        for animal in range(len(self.classes)):
-            wandb.log({
-                f"train f1_score von {self.classes[animal]}": f1_score(label_train[:,animal],pred_train==animal),
-                f"validation f1_score von {self.classes[animal]}" : f1_score(label_val[:,animal],pred_val==animal)           
-            })
+        f1_train = {f"train f1_score von {self.classes[animal]}": f1_score(label_train[:,animal],pred_train==animal) for animal in range(len(self.classes))}
+        f1_test = {f"validation f1_score von {self.classes[animal]}" : f1_score(label_val[:,animal],pred_val==animal) for animal in range(len(self.classes))}
+        log = {"Loss train":loss_train,"Loss val": loss_val}
+        wandb.log({**f1_train,**f1_test,**log})
 
         
-    def per_model(self,label_val,pred_val) -> None:
+        
+    def per_model(self,label_val,pred_val,val_data) -> None:
         """
         Jan
-        wandb log of a confusion matrix
+        wandb log of a confusion matrix and plots of wrong classified animals
         :param np.array pred_val: prediction of the validation
         :param np.array label_val: labels of the validation
+        :param pd.dataframe val_data: validation data
         """
-        wandb.log({"confusion matrix":wandb.sklearn.plot_confusion_matrix(np.argmax(label_val,axis=1),np.argmax(pred_val,axis=1),self.classes)})
+        self.true_label = np.argmax(label_val,axis=1)
+        self.true_pred = np.argmax(pred_val,axis=1)
+        wrong_classified = np.where(self.true_label != self.true_pred)[0]
 
-    @staticmethod
-    def f1_score(pred:np.array,label:np.array) -> float:
+        self.plot_16_animals(np.random.choice(wrong_classified,replace=False,size=16),val_data)
+
+        wandb.log({"confusion matrix":wandb.sklearn.plot_confusion_matrix(self.true_label,self.true_pred,self.classes),"wrong prediction":plt})
+        plt.close()
+        
+        data_wrong_class = val_data.iloc[wrong_classified]
+        site_most_wrong = data_wrong_class[data_wrong_class["site"] == data_wrong_class["site"].value_counts().index[0]]
+        if len(site_most_wrong) < 16:
+            self.plot_16_animals(range(len(site_most_wrong)),data_wrong_class)
+        else:
+            self.plot_16_animals(np.random.choice(range(len(site_most_wrong)),size=16,replace=False),data_wrong_class)
+        
+        plt.suptitle("worst site: " + str(data_wrong_class["site"][0]),size=120)
+        wandb.log({"Bad site":plt})
+        plt.close()
+    
+    def plot_16_animals(self,index:np.array,data:pd.DataFrame):
         """
         Jan
-        f1 score of a given prediction and label
-        :param np.array pred: prediction
-        :param np.array label: 
+        plot 16 animals
+        :param np.array index: index of the choosen animals
+        :param pd.DataFrame data: data with the filepath of the images
         """
-        pass
+        fig = plt.figure(figsize=(120, 90),dpi=20)
+        for n,variable in enumerate(index):
+            ax = fig.add_subplot(4, 4, n + 1)
+            datapoint = data.iloc[variable]
+            ax.imshow(Image.open("./competition_data/" + datapoint["filepath"]))
+            ax.set_title(f"{self.classes[self.true_pred[variable]]} anstatt {self.classes[self.true_label[variable]]}",size=60)

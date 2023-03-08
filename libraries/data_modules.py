@@ -29,9 +29,13 @@ class ImagesDataset(Dataset):
         self.label = y_df
         self.transform = transform
 
-    def __getitem__(self, index:int):
+    def __getitem__(self, index:int) -> dict:
         """
         :param int index: index of the data path
+
+        :return: dictionary of id,image,label
+        :rtype: dic
+
         """
         image = Image.open("./competition_data/" + self.data.iloc[index]["filepath"]).convert("RGB")
         image = self.transform(image)

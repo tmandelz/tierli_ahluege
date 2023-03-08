@@ -13,7 +13,6 @@ import torchvision.models as models
 import torch.optim as optim
 from tqdm import tqdm
 from torchvision import transforms
-import sklearn
 # %%
 # only for testing
 # train_features = pd.read_csv("../competition_data/train_features.csv", index_col="id")
@@ -37,11 +36,12 @@ class base_mlp(nn.Module):
         x = torch.flatten(x, 1) # flatten all dimensions except batch
         x = self.fc1(x)
         return x
+
 model = base_mlp()
-simple_mlp = del_model(data_modules.DataModule(basic_transform=test_transformer),model)
+simple_mlp = del_model(data_modules.DataModule(basic_transform=test_transformer),model,batchsize_train_data=16)
 optimizer = optim.SGD(model.parameters(), lr=0.1, momentum=0.9)
 # %%
-simple_mlp.train_model(optimizer,"base_mlp","testrun1",30,test_model=True)
+simple_mlp.train_model(optimizer,"base_mlp","testrun1",5,test_model=True)
 
 # %%
 model = models.efficientnet_b2(pretrained=True)
@@ -54,5 +54,18 @@ model.classifier = nn.Sequential(
 
 efficientnet = del_model(data_modules.DataModule(),model)
 efficientnet.train_model(optimizer,"resnet50","testrun1",1)
-
+# %%
+test = data_modules.DataModule(basic_transform=test_transformer).val.data
+# %%
+test[test["site"] == test["site"].value_counts().index[0]]
+# %%
+test.iloc[[1,2]]
+# %%
+np.random.choice(range(7),size=16,replace=False)
+# %%
+a = {'a':1, 'b':2, 'c':3}
+b = {'d':1, 'e':2, 'f':3}
+c = {1:1, 2:2, 3:3}
+merge = {**a, **b, **c}
+print(merge)
 # %%
