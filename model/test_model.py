@@ -42,30 +42,27 @@ simple_mlp = del_model(data_modules.DataModule(basic_transform=test_transformer)
 optimizer = optim.SGD(model.parameters(), lr=0.1, momentum=0.9)
 # %%
 simple_mlp.train_model(optimizer,"base_mlp","testrun1",5,test_model=True)
+# simple_mlp.submit_file("test") 
 
 # %%
-model = models.efficientnet_b2(pretrained=True)
-model.classifier = nn.Sequential(
-    nn.Linear(150528, 1000),  # dense layer takes a 2048-dim input and outputs 100-dim
+# https://pytorch.org/vision/main/models/generated/torchvision.models.efficientnet_b0.html#torchvision.models.efficientnet_b0
+efficientnet_transfromer = transforms.Compose([
+                transforms.Resize((256, 256),interpolation=transforms.InterpolationMode.BICUBIC),
+                transforms.CenterCrop(224),
+                transforms.ToTensor(),
+                transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                                    std=[0.229, 0.224, 0.225])
+                ])
+
+# %%
+efficient = models.efficientnet_b0(pretrained=True)
+efficient.classifier = nn.Sequential(
+    nn.Linear(1280, 1000),  # dense layer takes a 2048-dim input and outputs 100-dim
     nn.ReLU(inplace=True),  # ReLU activation introduces non-linearity
     nn.Dropout(0.1),  # common technique to mitigate overfitting
     nn.Linear(1000, 8),  # final dense layer outputs 8-dim corresponding to our target classes
 )
-
-efficientnet = del_model(data_modules.DataModule(),model)
-efficientnet.train_model(optimizer,"resnet50","testrun1",1)
-# %%
-test = data_modules.DataModule(basic_transform=test_transformer).val.data
-# %%
-test[test["site"] == test["site"].value_counts().index[0]]
-# %%
-test.iloc[[1,2]]
-# %%
-np.random.choice(range(7),size=16,replace=False)
-# %%
-a = {'a':1, 'b':2, 'c':3}
-b = {'d':1, 'e':2, 'f':3}
-c = {1:1, 2:2, 3:3}
-merge = {**a, **b, **c}
-print(merge)
+optimizer = optim.SGD(efficient.parameters(), lr=0.1, momentum=0.9)
+efficientnet = del_model(data_modules.DataModule(),efficient)
+efficientnet.train_model(optimizer,"efficientnet","testrun1",1)
 # %%
