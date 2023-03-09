@@ -45,8 +45,7 @@ class Evaluation():
         log = {"Loss train":loss_train,"Loss val": loss_val}
         wandb.log({**f1_train,**f1_test,**log})
 
-        
-        
+          
     def per_model(self,label_val,pred_val,val_data) -> None:
         """
         Jan
