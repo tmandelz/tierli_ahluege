@@ -11,6 +11,7 @@ wandb = "*"
 torchvision = "*"
 sklearn = "*"
 scikit-learn = "*"
+matplotlib = "*"
 
 [dev-packages]
 ipykernel = "*"
