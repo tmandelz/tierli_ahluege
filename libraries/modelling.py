@@ -24,7 +24,6 @@ def set_seed(seed:int=42):
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
 
-
 # %%
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 class del_model:
@@ -37,6 +36,7 @@ class del_model:
         :param torch.device device: used device for training
         :param int batchsize: batchsize of the training data
         """
+        set_seed()
         self.data_model = data_model
         self.train_loader = data_model.train_dataloader(batchsize_train_data)
         self.val_loader = data_model.val_dataloader()
@@ -50,7 +50,8 @@ class del_model:
                     run_name:str,
                     num_epochs:int,
                     loss_module:nn=nn.CrossEntropyLoss(),
-                    test_model:bool=False
+                    test_model:bool=False,
+                    project_name:str="test"
                     ) -> None:
         """
         Jan
@@ -61,11 +62,11 @@ class del_model:
         :param int num_epochs:
         :param nn.CrossEntropyLoss loss_module: Loss used for the competition
         :param int test_model: If true, it only loops over the first train batch. -> For the overfitting test.
+        :param str project_name: Name of the project in wandb.
         """ 
         # wandb setup
-        set_seed()
         run = wandb.init(
-            project="competition",
+            project=project_name,
             entity="deeptier",
             name=run_name,
             config={
@@ -97,6 +98,7 @@ class del_model:
                 optimizer.step()
                 
                 self.evaluation.per_batch(loss)
+
                 # data for evaluation
                 label_train_data = np.concatenate((label_train_data,data_labels.data.cpu().numpy()),axis=0)
                 predict_train = torch.argmax(preds, 1).data.cpu().numpy()
@@ -110,9 +112,6 @@ class del_model:
                     
         # wandb per run
         self.evaluation.per_model(label_val,pred_val,self.data_model.val.data)
-
-        # prediction off the test set
-        self.prediction_test,_ = self.predict(self.model,self.test_loader)
 
     def predict(self,model:nn.Module,data_loader:DataLoader):
         """
@@ -141,3 +140,14 @@ class del_model:
                     true_labels = np.concatenate((true_labels,data_labels.data.cpu().numpy()),axis=0)
         model.train()
         return predictions,true_labels
+    def submit_file(self,submit_name:str):
+        """
+        Jan
+        Creates the file for the submission
+        :param str submit_name: name of the file
+        """
+        # prediction off the test set
+        prediction_test,_=self.predict(self.model,self.test_loader)
+        results_df=pd.DataFrame(prediction_test,columns=self.evaluation.classes)
+        submit_df=pd.concat([self.data_model.test.data.reset_index()["id"],results_df],axis=1)
+        submit_df.to_csv(f"./data_submit/{submit_name}.csv")
