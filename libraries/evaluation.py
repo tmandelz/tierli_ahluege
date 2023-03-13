@@ -5,23 +5,21 @@ import wandb
 from sklearn.metrics import f1_score
 import matplotlib.pyplot as plt
 from PIL import Image
-
+from strenum import StrEnum
+# %%
+class Animal(StrEnum):
+    ANTELOPE = "antelope_duiker"
+    BIRD = "bird"
+    BLANK = "blank"
+    CIVET = "civet_genet"
+    HOG = "hog"
+    LEOPARD = "leopard"
+    MONKEY = "monkey_prosimian",
+    RODENT = "rodent"
 
 # %%
-classes = [
-    "antelope_duiker",
-    "bird",
-    "blank",
-    "civet_genet",
-    "hog",
-    "leopard",
-    "monkey_prosimian",
-    "rodent",
-]
-
-
 class Evaluation:
-    def __init__(self, data_classes: list = classes) -> None:
+    def __init__(self, data_classes: list = [animal.value for animal in Animal]) -> None:
         """
         Jan
         :param list data_classes: list of true labels (convert from int to str)

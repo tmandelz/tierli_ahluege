@@ -12,6 +12,7 @@ torchvision = "*"
 sklearn = "*"
 scikit-learn = "*"
 matplotlib = "*"
+strenum = "*"
 
 [dev-packages]
 ipykernel = "*"
