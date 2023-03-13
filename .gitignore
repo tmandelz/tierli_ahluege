@@ -1,1 +1,3 @@
 ﻿Pipfile.lock
+*__pycache__*
+*wandb*
