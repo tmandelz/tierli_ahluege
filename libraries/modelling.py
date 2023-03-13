@@ -168,7 +168,7 @@ class del_model:
                 )
                 
                 # checks if labels columns exists -> if not exists test batch
-                if len(batch) == 3:
+                if 'label' in batch.keys():
                     data_labels = batch["label"].to(self.device)
                     true_labels = np.concatenate(
                         (true_labels, data_labels.data.cpu().numpy()), axis=0
@@ -188,4 +188,4 @@ class del_model:
         submit_df = pd.concat(
             [self.data_model.test.data.reset_index()["id"], results_df], axis=1
         )
-        submit_df.to_csv(f"./data_submit/{submit_name}.csv")
+        submit_df.set_index("id").to_csv(f"./data_submit/{submit_name}.csv")
