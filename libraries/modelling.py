@@ -11,7 +11,7 @@ from libraries.data_modules import DataModule
 from libraries.evaluation import Evaluation
 
 # %%
-def set_seed(seed:int=42):
+def set_seed(seed: int = 42):
     """
     Jan
     Function to set the seed for the gpu and the cpu
@@ -24,10 +24,19 @@ def set_seed(seed:int=42):
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
 
+
 # %%
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+
+
 class del_model:
-    def __init__(self,data_model:DataModule,model:nn.Module,device:torch.device=device,batchsize_train_data:int=64) -> None:
+    def __init__(
+        self,
+        data_model: DataModule,
+        model: nn.Module,
+        device: torch.device = device,
+        batchsize_train_data: int = 64,
+    ) -> None:
         """
         Jan
         Load the train/test/val data.
@@ -44,48 +53,57 @@ class del_model:
         self.model = model
         self.device = device
         self.evaluation = Evaluation()
-    def train_model(self,
-                    optimizer:torch.optim,
-                    modeltyp:str,
-                    run_name:str,
-                    num_epochs:int,
-                    loss_module:nn=nn.CrossEntropyLoss(),
-                    test_model:bool=False,
-                    project_name:str="test"
-                    ) -> None:
+
+    def train_model(
+        self,
+        optimizer: torch.optim,
+        modeltype: str,
+        run_name: str,
+        num_epochs: int,
+        loss_module: nn = nn.CrossEntropyLoss(),
+        test_model: bool = False,
+        project_name: str = "test",
+    ) -> None:
         """
         Jan
         To train a pytorch model.
         :param torch.optim optimizer: optimizer for the training
-        :param str modeltyp: Modeltyp (architectur) of the model -> to structure wandb
+        :param str modeltype: Modeltype (architectur) of the model -> to structure wandb
         :param str run_name: Name of a single run.
         :param int num_epochs:
         :param nn.CrossEntropyLoss loss_module: Loss used for the competition
         :param int test_model: If true, it only loops over the first train batch. -> For the overfitting test.
         :param str project_name: Name of the project in wandb.
-        """ 
+        """
         # wandb setup
         run = wandb.init(
             project=project_name,
             entity="deeptier",
             name=run_name,
             config={
-            "learning_rate":optimizer.defaults["lr"],
-            "epochs":num_epochs,
-            "Modelltyp":modeltyp,
-            }
-            )
+                "learning_rate": optimizer.defaults["lr"],
+                "epochs": num_epochs,
+                "modeltype": modeltype,
+            },
+        )
         # training
         self.model.train()
         self.model.to(device)
+
+        # Overfitting Test for first batch
         if test_model:
             self.train_loader = [next(iter(self.train_loader))]
+
+        # train loop over epochs
         for epoch in tqdm(range(num_epochs)):
+            
             loss_train = np.array([])
             label_train_data = np.empty((0, 8))
             pred_train_data = np.array([])
+
+            # train loop over batches
             for batch in self.train_loader:
-                
+
                 # calc gradient
                 data_inputs = batch["image"].to(device)
                 data_labels = batch["label"].to(device)
@@ -96,24 +114,35 @@ class del_model:
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
-                
+
                 self.evaluation.per_batch(loss)
 
                 # data for evaluation
-                label_train_data = np.concatenate((label_train_data,data_labels.data.cpu().numpy()),axis=0)
+                label_train_data = np.concatenate(
+                    (label_train_data, data_labels.data.cpu().numpy()), axis=0
+                )
                 predict_train = torch.argmax(preds, 1).data.cpu().numpy()
-                pred_train_data = np.concatenate((pred_train_data,predict_train),axis=0)
-                loss_train = np.append(loss_train,loss.item())
+                pred_train_data = np.concatenate(
+                    (pred_train_data, predict_train), axis=0
+                )
+                loss_train = np.append(loss_train, loss.item())
 
             # wandb per epoch
-            pred_val,label_val = self.predict(self.model,self.val_loader)
+            pred_val, label_val = self.predict(self.model, self.val_loader)
             loss_val = loss_module(torch.tensor(pred_val), torch.tensor(label_val))
-            self.evaluation.per_epoch(loss_train.mean(),pred_train_data,label_train_data,loss_val,np.argmax(pred_val, axis=1),label_val)
-                    
-        # wandb per run
-        self.evaluation.per_model(label_val,pred_val,self.data_model.val.data)
+            self.evaluation.per_epoch(
+                loss_train.mean(),
+                pred_train_data,
+                label_train_data,
+                loss_val,
+                np.argmax(pred_val, axis=1),
+                label_val,
+            )
 
-    def predict(self,model:nn.Module,data_loader:DataLoader):
+        # wandb per run
+        self.evaluation.per_model(label_val, pred_val, self.data_model.val.data)
+
+    def predict(self, model: nn.Module, data_loader: DataLoader):
         """
         Jan
         Prediction for a given model and dataset
@@ -126,28 +155,37 @@ class del_model:
         model.eval()
         predictions = np.empty((0, 8))
         true_labels = np.empty((0, 8))
-        with torch.no_grad(): # Deactivate gradients for the following code
+        with torch.no_grad():  # Deactivate gradients for the following code
             for batch in data_loader:
 
                 # Determine prediction of model
                 data_inputs = batch["image"].to(self.device)
-                
+
                 preds = model(data_inputs)
                 preds = torch.sigmoid(preds)
-                predictions = np.concatenate((predictions,preds.data.cpu().numpy()),axis=0)
-                if len(batch) == 3:                    
+                predictions = np.concatenate(
+                    (predictions, preds.data.cpu().numpy()), axis=0
+                )
+                
+                # checks if labels columns exists -> if not exists test batch
+                if len(batch) == 3:
                     data_labels = batch["label"].to(self.device)
-                    true_labels = np.concatenate((true_labels,data_labels.data.cpu().numpy()),axis=0)
+                    true_labels = np.concatenate(
+                        (true_labels, data_labels.data.cpu().numpy()), axis=0
+                    )
         model.train()
-        return predictions,true_labels
-    def submit_file(self,submit_name:str):
+        return predictions, true_labels
+
+    def submit_file(self, submit_name: str):
         """
         Jan
         Creates the file for the submission
         :param str submit_name: name of the file
         """
         # prediction off the test set
-        prediction_test,_=self.predict(self.model,self.test_loader)
-        results_df=pd.DataFrame(prediction_test,columns=self.evaluation.classes)
-        submit_df=pd.concat([self.data_model.test.data.reset_index()["id"],results_df],axis=1)
+        prediction_test, _ = self.predict(self.model, self.test_loader)
+        results_df = pd.DataFrame(prediction_test, columns=self.evaluation.classes)
+        submit_df = pd.concat(
+            [self.data_model.test.data.reset_index()["id"], results_df], axis=1
+        )
         submit_df.to_csv(f"./data_submit/{submit_name}.csv")
