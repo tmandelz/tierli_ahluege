@@ -6,8 +6,8 @@ if os.getcwd().endswith("model"):
 
 import pandas as pd
 import numpy as np
-from libraries.modelling import del_model
-from libraries import data_modules
+from src.modelling import del_model
+from src import data_modules
 import torch
 from torch import nn
 import torchvision.models as models
