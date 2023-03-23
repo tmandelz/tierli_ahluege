@@ -7,8 +7,8 @@ import numpy as np
 import wandb
 from tqdm import tqdm
 from torch.utils.data import DataLoader
-from libraries.data_modules import DataModule
-from libraries.evaluation import Evaluation
+from src.data_modules import DataModule
+from src.evaluation import Evaluation
 
 # %%
 def set_seed(seed: int = 42):
@@ -141,7 +141,8 @@ class del_model:
 
         # wandb per run
         self.evaluation.per_model(label_val, pred_val, self.data_model.val.data)
-
+        run.finish()
+        
     def predict(self, model: nn.Module, data_loader: DataLoader):
         """
         Jan
