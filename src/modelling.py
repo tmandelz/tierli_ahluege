@@ -7,8 +7,8 @@ import numpy as np
 import wandb
 from tqdm import tqdm
 from torch.utils.data import DataLoader
-from src.data_modules import DataModule
-from src.evaluation import Evaluation
+from libraries.data_modules import DataModule
+from libraries.evaluation import Evaluation
 
 # %%
 def set_seed(seed: int = 42):
@@ -29,15 +29,13 @@ def set_seed(seed: int = 42):
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 
 
-class CCV1_Trainer:
+class del_model:
     def __init__(
         self,
         data_model: DataModule,
         model: nn.Module,
-        optimizer:torch.optim.Optimizer = nn.CrossEntropyLoss(),
         device: torch.device = device,
-        batchsize_train_data: int = 64,
-        gradient_tracking_freq:int = 1000,
+        
     ) -> None:
         """
         Jan
@@ -45,124 +43,109 @@ class CCV1_Trainer:
         :param DataModule data_model: instance where the 3 dataloader are available.
         :param nn.Module model: pytorch deep learning module
         :param torch.device device: used device for training
-        :param int batchsize: batchsize of the training data
         """
-        # set seed
         set_seed()
-
-        # init model and gpu initialisation
-        model = model.to(device)
+        self.data_model = data_model
+        self.test_loader = data_model.test_dataloader()
         self.model = model
         self.device = device
-
-        # train,val and test data
-        self.data_model = data_model
-        self.train_loader = data_model.train_dataloader(batchsize_train_data)
-        self.val_loader = data_model.val_dataloader()
-        self.test_loader = data_model.test_dataloader()
-        
-        # optimizer and loss
-        self.optimizer = optimizer
-        self.criterion = nn.CrossEntropyLoss()
-        
-        # evaluation
         self.evaluation = Evaluation()
-        self.gradient_tracking_freq=gradient_tracking_freq
 
     def train_model(
         self,
         optimizer: torch.optim,
-        model_architecture: str,
+        modeltype: str,
         run_name: str,
         num_epochs: int,
+        loss_module: nn = nn.CrossEntropyLoss(),
         test_model: bool = False,
-        project_name: str = "ccv1"
+        project_name: str = "test",
+        batchsize_train_data: int = 64,
     ) -> None:
         """
         Jan
         To train a pytorch model.
         :param torch.optim optimizer: optimizer for the training
-        :param str model_architecture: Modelarchitecture (architectur) of the model
+        :param str modeltype: Modeltype (architectur) of the model -> to structure wandb
         :param str run_name: Name of a single run.
-        :param int num_epochs: number of epochs
+        :param int num_epochs:
+        :param nn.CrossEntropyLoss loss_module: Loss used for the competition
         :param int test_model: If true, it only loops over the first train batch. -> For the overfitting test.
         :param str project_name: Name of the project in wandb.
+        :param int batchsize: batchsize of the training data
         """
         # wandb setup
-        config = dict()
-        config["lr"] = optimizer.defaults["lr"]
-        # config["momentum"] = optimizer.defaults["momentum"]
-        config["epochs"] = num_epochs
-        config["architecture"] = model_architecture
         run = wandb.init(
             project=project_name,
             entity="deeptier",
             name=run_name,
-            config=config
+            config={
+                "learning_rate": optimizer.defaults["lr"],
+                "epochs": num_epochs,
+                "modeltype": modeltype,
+            },
         )
-
-        wandb.watch(self.model, self.criterion, log="all", log_freq=self.gradient_tracking_freq)
-
         # training
         self.model.train()
+        self.model.to(device)
 
         # Overfitting Test for first batch
         if test_model:
             self.train_loader = [next(iter(self.train_loader))]
 
-        # train loop over epochs
-        batchiter = 1
-        for epoch in tqdm(range(num_epochs)):
-          
-            loss_train = np.array([])
-            label_train_data = np.empty((0, 8))
-            pred_train_data = np.array([])
+        # train loop over folds
+        for fold in range(4):
+            self.data_model.prepare_data(fold)
+            self.train_loader = self.data_model.train_dataloader(batchsize_train_data)
+            self.val_loader = self.data_model.val_dataloader()
 
-            # train loop over batches
-            
-            for batch in self.train_loader:
-                # calc gradient
-                data_inputs = batch["image"].to(device)
-                data_labels = batch["label"].to(device)
+            # train loop over epochs
+            for epoch in tqdm(range(num_epochs)):
+                loss_train = np.array([])
+                label_train_data = np.empty((0, 8))
+                pred_train_data = np.array([])
 
-                preds = self.model(data_inputs)
-                loss = self.criterion(preds, data_labels)
+                # train loop over batches
+                for batch in self.train_loader:
 
-                optimizer.zero_grad()
-                loss.backward()
-                optimizer.step()
+                    # calc gradient
+                    data_inputs = batch["image"].to(device)
+                    data_labels = batch["label"].to(device)
 
-                self.evaluation.per_batch(batchiter,epoch,loss)
+                    preds = self.model(data_inputs)
+                    loss = loss_module(preds, data_labels)
 
-                # data for evaluation
-                label_train_data = np.concatenate(
-                    (label_train_data, data_labels.data.cpu().numpy()), axis=0
+                    optimizer.zero_grad()
+                    loss.backward()
+                    optimizer.step()
+
+                    self.evaluation.per_batch(loss)
+
+                    # data for evaluation
+                    label_train_data = np.concatenate(
+                        (label_train_data, data_labels.data.cpu().numpy()), axis=0
+                    )
+                    predict_train = torch.argmax(preds, 1).data.cpu().numpy()
+                    pred_train_data = np.concatenate(
+                        (pred_train_data, predict_train), axis=0
+                    )
+                    loss_train = np.append(loss_train, loss.item())
+
+                # wandb per epoch
+                pred_val, label_val = self.predict(self.model, self.val_loader)
+                loss_val = loss_module(torch.tensor(pred_val), torch.tensor(label_val))
+                self.evaluation.per_epoch(
+                    loss_train.mean(),
+                    pred_train_data,
+                    label_train_data,
+                    loss_val,
+                    np.argmax(pred_val, axis=1),
+                    label_val,
                 )
-                predict_train = torch.argmax(preds, 1).data.cpu().numpy()
-                pred_train_data = np.concatenate(
-                    (pred_train_data, predict_train), axis=0
-                )
-                loss_train = np.append(loss_train, loss.item())
-                
-                batchiter +=1
 
-            # wandb per epoch
-            pred_val, label_val = self.predict(self.model, self.val_loader)
-            loss_val = self.criterion(torch.tensor(pred_val), torch.tensor(label_val))
-            self.evaluation.per_epoch(
-                epoch,
-                loss_train.mean(),
-                pred_train_data,
-                label_train_data,
-                loss_val,
-                np.argmax(pred_val, axis=1),
-                label_val,
-            )
+            # wandb per run
+            self.evaluation.per_model(label_val, pred_val, self.data_model.val.data)
 
-        # wandb per run
-        self.evaluation.per_model(label_val, pred_val, self.data_model.val.data)
-        run.finish()
-        
     def predict(self, model: nn.Module, data_loader: DataLoader):
         """
         Jan

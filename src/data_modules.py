@@ -57,18 +57,14 @@ class DataModule(pl.LightningDataModule):
     def __init__(
         self,
         basic_transform: transforms,
-        train_features_path: str = "./competition_data/train_features.csv",
-        train_labels_path: str = "./competition_data/train_labels.csv",
-        val_features_path: str = "./competition_data/val_features.csv",
-        val_labels_path: str = "./competition_data/val_labels.csv",
-        test_features_path: str = "./competition_data/test_features.csv",
+        train_features_path: str = "./competition_data/train_features_with_split.csv",
+        train_labels_path: str = "./competition_data/train_labels_with_split.csv",        
+        test_features_path: str = "./competition_data/test_features.csv",        
     ):
         """
         Jan
         :param str train_features_path:
         :param str train_labels_path:
-        :param str val_features_path:
-        :param str val_labels_path:
         :param str test_features_path:
         :param transforms basic_transform: basic tranformation -> default resize(224,224), ToTensor, standardize
         """
@@ -91,6 +87,18 @@ class DataModule(pl.LightningDataModule):
         self.val = ImagesDataset(val_features, exclude_augmentation_transformer, val_labels)
         # exclude data augmentation compose
         self.test = ImagesDataset(test_features, exclude_augmentation_transformer)
+    def prepare_data(self,
+                     fold_number) -> None:
+        val_features = self.train_val_features.loc[self.train_val_features["split"]==fold_number,self.train_val_features.columns != "split"]
+        train_features = self.train_val_features.loc[self.train_val_features["split"]!=fold_number,self.train_val_features.columns != "split"]
+
+        val_labels = self.train_val_labels.loc[self.train_val_labels["split"]==fold_number,self.train_val_labels.columns != "split"]
+        train_labels = self.train_val_labels.loc[self.train_val_labels["split"]!=fold_number,self.train_val_labels.columns != "split"]
+
+
+        self.train = ImagesDataset(train_features, self.basic_transform, train_labels)
+        self.val = ImagesDataset(val_features, self.basic_transform, val_labels)
+        
 
     def train_dataloader(self, batch_size: int = 64):
         """
