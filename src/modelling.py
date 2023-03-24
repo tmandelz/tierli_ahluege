@@ -2,13 +2,14 @@
 import pandas as pd
 import torch
 import torch.nn as nn
+import torch.optim as optim
 import pytorch_lightning as pl
 import numpy as np
 import wandb
 from tqdm import tqdm
 from torch.utils.data import DataLoader
-from libraries.data_modules import DataModule
-from libraries.evaluation import Evaluation
+from src.data_modules import DataModule
+from src.evaluation import Evaluation
 
 # %%
 def set_seed(seed: int = 42):
@@ -33,7 +34,7 @@ class del_model:
     def __init__(
         self,
         data_model: DataModule,
-        model: nn.Module,
+        model,
         device: torch.device = device,
         
     ) -> None:
@@ -53,7 +54,6 @@ class del_model:
 
     def train_model(
         self,
-        optimizer: torch.optim,
         modeltype: str,
         run_name: str,
         num_epochs: int,
@@ -61,11 +61,11 @@ class del_model:
         test_model: bool = False,
         project_name: str = "test",
         batchsize_train_data: int = 64,
+        lr= 1e-3
     ) -> None:
         """
         Jan
         To train a pytorch model.
-        :param torch.optim optimizer: optimizer for the training
         :param str modeltype: Modeltype (architectur) of the model -> to structure wandb
         :param str run_name: Name of a single run.
         :param int num_epochs:
@@ -73,6 +73,7 @@ class del_model:
         :param int test_model: If true, it only loops over the first train batch. -> For the overfitting test.
         :param str project_name: Name of the project in wandb.
         :param int batchsize: batchsize of the training data
+        :param int lr: learning rate of the model
         """
         # wandb setup
         run = wandb.init(
@@ -80,25 +81,25 @@ class del_model:
             entity="deeptier",
             name=run_name,
             config={
-                "learning_rate": optimizer.defaults["lr"],
+                "learning_rate": lr,
                 "epochs": num_epochs,
                 "modeltype": modeltype,
             },
         )
-        # training
-        self.model.train()
-        self.model.to(device)
-
-        # Overfitting Test for first batch
-        if test_model:
-            self.train_loader = [next(iter(self.train_loader))]
-
+        
         # train loop over folds
-        for fold in range(4):
+        for fold in range(5):
             self.data_model.prepare_data(fold)
             self.train_loader = self.data_model.train_dataloader(batchsize_train_data)
             self.val_loader = self.data_model.val_dataloader()
-
+            # Overfitting Test for first batch
+            if test_model:
+                self.train_loader = [next(iter(self.train_loader))]
+            model = self.model()
+            optimizer = optim.Adam(model.parameters(),lr=lr)
+            # training
+            model.train()
+            model.to(device)
             # train loop over epochs
             for epoch in tqdm(range(num_epochs)):
                 loss_train = np.array([])
@@ -112,7 +113,7 @@ class del_model:
                     data_inputs = batch["image"].to(device)
                     data_labels = batch["label"].to(device)
 
-                    preds = self.model(data_inputs)
+                    preds = model(data_inputs)
                     loss = loss_module(preds, data_labels)
 
                     optimizer.zero_grad()
@@ -132,7 +133,7 @@ class del_model:
                     loss_train = np.append(loss_train, loss.item())
 
                 # wandb per epoch
-                pred_val, label_val = self.predict(self.model, self.val_loader)
+                pred_val, label_val = self.predict(model, self.val_loader)
                 loss_val = loss_module(torch.tensor(pred_val), torch.tensor(label_val))
                 self.evaluation.per_epoch(
                     loss_train.mean(),
@@ -145,7 +146,7 @@ class del_model:
 
             # wandb per run
             self.evaluation.per_model(label_val, pred_val, self.data_model.val.data)
-
+        self.model_fold5 = model
     def predict(self, model: nn.Module, data_loader: DataLoader):
         """
         Jan
@@ -187,9 +188,11 @@ class del_model:
         :param str submit_name: name of the file
         """
         # prediction off the test set
-        prediction_test, _ = self.predict(self.model, self.test_loader)
+        prediction_test, _ = self.predict(self.model_fold5, self.test_loader)
         results_df = pd.DataFrame(prediction_test, columns=self.evaluation.classes)
         submit_df = pd.concat(
             [self.data_model.test.data.reset_index()["id"], results_df], axis=1
         )
         submit_df.set_index("id").to_csv(f"./data_submit/{submit_name}.csv")
+
+# %%
