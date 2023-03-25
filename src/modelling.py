@@ -29,13 +29,15 @@ def set_seed(seed: int = 42):
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 
 
-class del_model:
+class CCV1_Trainer:
     def __init__(
         self,
         data_model: DataModule,
         model: nn.Module,
+        optimizer:torch.optim.Optimizer = nn.CrossEntropyLoss(),
         device: torch.device = device,
         batchsize_train_data: int = 64,
+        gradient_tracking_freq:int = 1000,
     ) -> None:
         """
         Jan
@@ -45,56 +47,71 @@ class del_model:
         :param torch.device device: used device for training
         :param int batchsize: batchsize of the training data
         """
+        # set seed
         set_seed()
+
+        # init model and gpu initialisation
+        model = model.to(device)
+        self.model = model
+        self.device = device
+
+        # train,val and test data
         self.data_model = data_model
         self.train_loader = data_model.train_dataloader(batchsize_train_data)
         self.val_loader = data_model.val_dataloader()
         self.test_loader = data_model.test_dataloader()
-        self.model = model
-        self.device = device
+        
+        # optimizer and loss
+        self.optimizer = optimizer
+        self.criterion = nn.CrossEntropyLoss()
+        
+        # evaluation
         self.evaluation = Evaluation()
+        self.gradient_tracking_freq=gradient_tracking_freq
 
     def train_model(
         self,
         optimizer: torch.optim,
-        modeltype: str,
+        model_architecture: str,
         run_name: str,
         num_epochs: int,
-        loss_module: nn = nn.CrossEntropyLoss(),
         test_model: bool = False,
-        project_name: str = "test",
+        project_name: str = "ccv1"
     ) -> None:
         """
         Jan
         To train a pytorch model.
         :param torch.optim optimizer: optimizer for the training
-        :param str modeltype: Modeltype (architectur) of the model -> to structure wandb
+        :param str model_architecture: Modelarchitecture (architectur) of the model
         :param str run_name: Name of a single run.
-        :param int num_epochs:
-        :param nn.CrossEntropyLoss loss_module: Loss used for the competition
+        :param int num_epochs: number of epochs
         :param int test_model: If true, it only loops over the first train batch. -> For the overfitting test.
         :param str project_name: Name of the project in wandb.
         """
         # wandb setup
+        config = dict()
+        config["lr"] = optimizer.defaults["lr"]
+        # config["momentum"] = optimizer.defaults["momentum"]
+        config["epochs"] = num_epochs
+        config["architecture"] = model_architecture
         run = wandb.init(
             project=project_name,
             entity="deeptier",
             name=run_name,
-            config={
-                "learning_rate": optimizer.defaults["lr"],
-                "epochs": num_epochs,
-                "modeltype": modeltype,
-            },
+            config=config
         )
+
+        wandb.watch(self.model, self.criterion, log="all", log_freq=self.gradient_tracking_freq)
+
         # training
         self.model.train()
-        self.model.to(device)
 
         # Overfitting Test for first batch
         if test_model:
             self.train_loader = [next(iter(self.train_loader))]
 
         # train loop over epochs
+        batchiter = 1
         for epoch in tqdm(range(num_epochs)):
             
             loss_train = np.array([])
@@ -102,20 +119,21 @@ class del_model:
             pred_train_data = np.array([])
 
             # train loop over batches
+            
             for batch in self.train_loader:
-
+                batchiter +=1
                 # calc gradient
                 data_inputs = batch["image"].to(device)
                 data_labels = batch["label"].to(device)
 
                 preds = self.model(data_inputs)
-                loss = loss_module(preds, data_labels)
+                loss = self.criterion(preds, data_labels)
 
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
 
-                self.evaluation.per_batch(loss)
+                self.evaluation.per_batch(batchiter,epoch,loss)
 
                 # data for evaluation
                 label_train_data = np.concatenate(
@@ -129,8 +147,9 @@ class del_model:
 
             # wandb per epoch
             pred_val, label_val = self.predict(self.model, self.val_loader)
-            loss_val = loss_module(torch.tensor(pred_val), torch.tensor(label_val))
+            loss_val = self.criterion(torch.tensor(pred_val), torch.tensor(label_val))
             self.evaluation.per_epoch(
+                epoch,
                 loss_train.mean(),
                 pred_train_data,
                 label_train_data,

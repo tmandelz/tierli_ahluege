@@ -1,4 +1,3 @@
-# %%
 import numpy as np
 import pandas as pd
 import wandb
@@ -6,7 +5,7 @@ from sklearn.metrics import f1_score
 import matplotlib.pyplot as plt
 from PIL import Image
 from strenum import StrEnum
-# %%
+
 class Animal(StrEnum):
     ANTELOPE = "antelope_duiker"
     BIRD = "bird"
@@ -17,7 +16,6 @@ class Animal(StrEnum):
     MONKEY = "monkey_prosimian",
     RODENT = "rodent"
 
-# %%
 class Evaluation:
     def __init__(self, data_classes: list = [animal.value for animal in Animal]) -> None:
         """
@@ -26,15 +24,16 @@ class Evaluation:
         """
         self.classes = data_classes
 
-    def per_batch(self, loss_batch) -> None:
+    def per_batch(self,index_batch:int,epoch:int, loss_batch:float) -> None:
         """
         Thomas
         Logs the loss of a batch
         """
-        wandb.log({"loss batch": loss_batch})
+        wandb.log({"index_batch":index_batch,"epoch":epoch,"loss batch": loss_batch})
 
     def per_epoch(
         self,
+        epoch:int,
         loss_train: float,
         pred_train: np.array,
         label_train: np.array,
@@ -64,7 +63,7 @@ class Evaluation:
             )
             for animal in range(len(self.classes))
         }
-        log = {"Loss train": loss_train, "Loss val": loss_val}
+        log = {"epoch":epoch,"Loss train": loss_train, "Loss val": loss_val}
         wandb.log({**f1_train, **f1_test, **log})
 
     def per_model(self, label_val, pred_val, val_data) -> None:
@@ -126,5 +125,3 @@ class Evaluation:
                 size=60,
             )
 
-
-# %%
