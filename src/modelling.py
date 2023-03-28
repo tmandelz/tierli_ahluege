@@ -90,7 +90,11 @@ class CCV1_Trainer:
         )
         
         # train loop over folds
-        for fold in range(5):
+        if test_model:
+            n_folds=1
+        else:
+            n_folds=5
+        for fold in range(n_folds):
             self.data_model.prepare_data(fold)
             self.train_loader = self.data_model.train_dataloader(batchsize_train_data)
             self.val_loader = self.data_model.val_dataloader()

@@ -30,7 +30,7 @@ from torchvision import transforms
 
 # %%
 test_transformer = CCV1Transformer(
-    transforms.Compose([transforms.ColorJitter(brightness=0.1)]), "standard", "mlp"
+    None_Transform(), "standard", "mlp"
 ).getCompose()
 
 test_transformer
@@ -53,7 +53,7 @@ simple_mlp = CCV1_Trainer(
 )
 # optimizer = optim.Adam(model.parameters())
 # %%
-simple_mlp.train_model("overfitting","base_mlp", batchsize_train_data=16, num_epochs=2)
+simple_mlp.train_model("overfitting","base_mlp", batchsize_train_data=16, num_epochs=6,test_model=True,lr=0.00005)
 #%%
 simple_mlp.submit_file("test")
 
