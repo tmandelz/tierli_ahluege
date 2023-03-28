@@ -69,8 +69,8 @@ class DataModule(pl.LightningDataModule):
         :param str test_features_path:
         """
         # load_data
-        train_features = pd.read_csv(train_features_path, index_col="id")
-        train_labels = pd.read_csv(train_labels_path, index_col="id")
+        self.train_features = pd.read_csv(train_features_path, index_col="id")
+        self.train_labels = pd.read_csv(train_labels_path, index_col="id")
         test_features = pd.read_csv(test_features_path, index_col="id")
 
         # prepare transforms
@@ -83,11 +83,11 @@ class DataModule(pl.LightningDataModule):
         self.test = ImagesDataset(test_features, self.exclude_augmentation_transformer)
     def prepare_data(self,
                      fold_number) -> None:
-        val_features = self.train_val_features.loc[self.train_val_features["split"]==fold_number,self.train_val_features.columns != "split"]
-        train_features = self.train_val_features.loc[self.train_val_features["split"]!=fold_number,self.train_val_features.columns != "split"]
+        val_features = self.train_features.loc[self.train_features["split"]==fold_number,self.train_features.columns != "split"]
+        train_features = self.train_features.loc[self.train_features["split"]!=fold_number,self.train_features.columns != "split"]
 
-        val_labels = self.train_val_labels.loc[self.train_val_labels["split"]==fold_number,self.train_val_labels.columns != "split"]
-        train_labels = self.train_val_labels.loc[self.train_val_labels["split"]!=fold_number,self.train_val_labels.columns != "split"]
+        val_labels = self.train_labels.loc[self.train_labels["split"]==fold_number,self.train_labels.columns != "split"]
+        train_labels = self.train_labels.loc[self.train_labels["split"]!=fold_number,self.train_labels.columns != "split"]
 
 
         self.train = ImagesDataset(train_features, self.basic_transform, train_labels)
