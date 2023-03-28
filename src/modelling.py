@@ -30,7 +30,7 @@ def set_seed(seed: int = 42):
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 
 
-class del_model:
+class CCV1_Trainer:
     def __init__(
         self,
         data_model: DataModule,
@@ -54,14 +54,15 @@ class del_model:
 
     def train_model(
         self,
-        modeltype: str,
+        model_architecture: str,
         run_name: str,
         num_epochs: int,
         loss_module: nn = nn.CrossEntropyLoss(),
         test_model: bool = False,
-        project_name: str = "test",
+        project_name: str = "ccv1",
         batchsize_train_data: int = 64,
-        lr= 1e-3
+        lr= 1e-3,
+        gradient_tracking_freq:int=1000
     ) -> None:
         """
         Jan
@@ -74,6 +75,7 @@ class del_model:
         :param str project_name: Name of the project in wandb.
         :param int batchsize: batchsize of the training data
         :param int lr: learning rate of the model
+        :param int gradient_tracking_freq: #TODO
         """
         # wandb setup
         run = wandb.init(
@@ -81,9 +83,9 @@ class del_model:
             entity="deeptier",
             name=run_name,
             config={
-                "learning_rate": lr,
+                "learning rate": lr,
                 "epochs": num_epochs,
-                "modeltype": modeltype,
+                "model architecture": model_architecture,
             },
         )
         
@@ -101,6 +103,7 @@ class del_model:
             model.train()
             model.to(device)
             # train loop over epochs
+            batchiter = 1
             for epoch in tqdm(range(num_epochs)):
                 loss_train = np.array([])
                 label_train_data = np.empty((0, 8))
@@ -120,7 +123,7 @@ class del_model:
                     loss.backward()
                     optimizer.step()
 
-                    self.evaluation.per_batch(loss)
+                    self.evaluation.per_batch(batchiter,epoch,loss)
 
                     # data for evaluation
                     label_train_data = np.concatenate(
@@ -131,11 +134,12 @@ class del_model:
                         (pred_train_data, predict_train), axis=0
                     )
                     loss_train = np.append(loss_train, loss.item())
-
+                    batchiter +=1
                 # wandb per epoch
                 pred_val, label_val = self.predict(model, self.val_loader)
                 loss_val = loss_module(torch.tensor(pred_val), torch.tensor(label_val))
                 self.evaluation.per_epoch(
+                    epoch,
                     loss_train.mean(),
                     pred_train_data,
                     label_train_data,
