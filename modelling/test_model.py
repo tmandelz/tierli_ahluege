@@ -71,18 +71,20 @@ efficientnet_transformer = CCV1Transformer(
 efficientnet_transformer
 
 # %%
-efficient = models.efficientnet_b0(pretrained=True)
-efficient.classifier = nn.Sequential(
+def efficient_():
+    model = models.efficientnet_b0(pretrained=True)
+    model.classifier = nn.Sequential(
     nn.Linear(1280, 1000),  # dense layer takes a 2048-dim input and outputs 100-dim
     nn.ReLU(inplace=True),  # ReLU activation introduces non-linearity
     nn.Dropout(0.1),  # common technique to mitigate overfitting
     nn.Linear(
         1000, 8
-    ),  # final dense layer outputs 8-dim corresponding to our target classes
-)
-optimizer = optim.SGD(efficient.parameters(), lr=0.1, momentum=0.9)
-efficientnet = CCV1_Trainer(DataModule(efficientnet_transformer), efficient,batchsize_train_data=128)
-efficientnet.train_model(optimizer, "efficientnet", "testrun1", 25)
+    )) # final dense layer outputs 8-dim corresponding to our target classes
+    return model
+# %%
+efficientnet = del_model(data_modules.DataModule(), efficient_)
+efficientnet.train_model("efficientnet", "testrun1", 10, test_model=True,batchsize_train_data=16)
+
 # %%
 efficientnet.submit_file("test_efficient")
 #%%
