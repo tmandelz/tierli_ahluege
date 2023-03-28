@@ -54,8 +54,8 @@ class CCV1_Trainer:
 
     def train_model(
         self,
-        model_architecture: str,
         run_name: str,
+        model_architecture: str,
         num_epochs: int,
         loss_module: nn = nn.CrossEntropyLoss(),
         test_model: bool = False,
