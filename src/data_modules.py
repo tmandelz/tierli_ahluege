@@ -63,30 +63,24 @@ class DataModule(pl.LightningDataModule):
     ):
         """
         Jan
+        :param transforms basic_transform: basic tranformation -> default resize(224,224), ToTensor, standardize
         :param str train_features_path:
         :param str train_labels_path:
         :param str test_features_path:
-        :param transforms basic_transform: basic tranformation -> default resize(224,224), ToTensor, standardize
         """
         # load_data
         train_features = pd.read_csv(train_features_path, index_col="id")
         train_labels = pd.read_csv(train_labels_path, index_col="id")
-
-        val_features = pd.read_csv(val_features_path, index_col="id")
-        val_labels = pd.read_csv(val_labels_path, index_col="id")
-
         test_features = pd.read_csv(test_features_path, index_col="id")
 
         # prepare transforms
-        self.train = ImagesDataset(train_features, basic_transform, train_labels)
-        
+        self.basic_transform = basic_transform
+
         # exclude the 2nd transformation in val und test set -> data augmentation only used by trainset
-        exclude_augmentation_transformer = transforms.Compose(basic_transform.transforms[:1] + basic_transform.transforms[1 + 1:])
+        self.exclude_augmentation_transformer = transforms.Compose(basic_transform.transforms[:1] + basic_transform.transforms[1 + 1:])
         
         # exclude data augmentation compose
-        self.val = ImagesDataset(val_features, exclude_augmentation_transformer, val_labels)
-        # exclude data augmentation compose
-        self.test = ImagesDataset(test_features, exclude_augmentation_transformer)
+        self.test = ImagesDataset(test_features, self.exclude_augmentation_transformer)
     def prepare_data(self,
                      fold_number) -> None:
         val_features = self.train_val_features.loc[self.train_val_features["split"]==fold_number,self.train_val_features.columns != "split"]
@@ -97,7 +91,7 @@ class DataModule(pl.LightningDataModule):
 
 
         self.train = ImagesDataset(train_features, self.basic_transform, train_labels)
-        self.val = ImagesDataset(val_features, self.basic_transform, val_labels)
+        self.val = ImagesDataset(val_features, self.exclude_augmentation_transformer, val_labels)
         
 
     def train_dataloader(self, batch_size: int = 64):
