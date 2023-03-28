@@ -1,8 +1,10 @@
-#%%
+# %%
 from torchvision import transforms
 from torch import nn
 
-#%%
+# %%
+
+
 class None_Transform(nn.Module):
     """
     Is used as a None Transform, only forwards the inputs
@@ -15,7 +17,7 @@ class None_Transform(nn.Module):
         return x
 
 
-#%%
+# %%
 class CCV1Transformer:
     """ """
 
@@ -38,7 +40,13 @@ class CCV1Transformer:
         if preprocessing_transformer == "standard":
             self.preprocessing_transformer = transforms.Compose(
                 [
-                    transforms.Resize((224, 224)),
+                    transforms.Resize((224, 224), antialias=True),
+                ]
+            )
+        elif preprocessing_transformer == "overfitting":
+            self.preprocessing_transformer = transforms.Compose(
+                [
+                    transforms.Resize((20, 20), antialias=True),
                 ]
             )
 
@@ -58,7 +66,8 @@ class CCV1Transformer:
         elif pretrained_transformer == "mlp":
             self.pretrained_transformer = transforms.Compose(
                 [
-                    transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5)),
+                    transforms.Normalize(
+                        mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5)),
                 ]
             )
         elif pretrained_transformer == "convnext":
