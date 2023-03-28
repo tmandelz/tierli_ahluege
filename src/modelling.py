@@ -113,7 +113,7 @@ class CCV1_Trainer:
         # train loop over epochs
         batchiter = 1
         for epoch in tqdm(range(num_epochs)):
-            
+          
             loss_train = np.array([])
             label_train_data = np.empty((0, 8))
             pred_train_data = np.array([])
@@ -121,7 +121,6 @@ class CCV1_Trainer:
             # train loop over batches
             
             for batch in self.train_loader:
-                batchiter +=1
                 # calc gradient
                 data_inputs = batch["image"].to(device)
                 data_labels = batch["label"].to(device)
@@ -144,6 +143,8 @@ class CCV1_Trainer:
                     (pred_train_data, predict_train), axis=0
                 )
                 loss_train = np.append(loss_train, loss.item())
+                
+                batchiter +=1
 
             # wandb per epoch
             pred_val, label_val = self.predict(self.model, self.val_loader)
