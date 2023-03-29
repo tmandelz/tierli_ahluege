@@ -63,6 +63,18 @@ class CCV1Transformer:
                     ),
                 ]
             )
+        elif pretrained_transformer == "resnet":
+            self.pretrained_transformer = transforms.Compose(
+                [
+                    transforms.Resize(
+                        (232, 232), interpolation=transforms.InterpolationMode.BILINEAR
+                    ),
+                    transforms.CenterCrop(224),
+                    transforms.Normalize(
+                        mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
+                    ),
+                ]
+            )
         elif pretrained_transformer == "mlp":
             self.pretrained_transformer = transforms.Compose(
                 [
