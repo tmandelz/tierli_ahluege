@@ -49,6 +49,12 @@ class CCV1Transformer:
                     transforms.Resize((20, 20), antialias=True),
                 ]
             )
+        elif preprocessing_transformer == "model_specific":
+            self.preprocessing_transformer = transforms.Compose(
+                [
+                   None_Transform()
+                ]
+            )
 
         # determine transformation steps for pretrained Models
         if pretrained_transformer == "efficientnet":
