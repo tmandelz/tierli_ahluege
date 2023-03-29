@@ -180,10 +180,10 @@ class CCV1_Trainer:
                     label_val,
                 )
 
-            # wandb per model
-            self.evaluation.per_model(
-                label_val, pred_val, self.data_model.val.data)
             self.run.finish()
+        # wandb per model
+        self.evaluation.per_model(
+            label_val, pred_val, self.data_model.val.data)
         # new model instance for a new k-fold
         self.model_fold5 = model
 
