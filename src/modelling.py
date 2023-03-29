@@ -3,7 +3,6 @@ import pandas as pd
 import torch
 import torch.nn as nn
 import torch.optim as optim
-import pytorch_lightning as pl
 import numpy as np
 import wandb
 from tqdm import tqdm
@@ -12,6 +11,8 @@ from src.data_modules import DataModule
 from src.evaluation import Evaluation
 
 # %%
+
+
 def set_seed(seed: int = 42):
     """
     Jan
@@ -27,16 +28,17 @@ def set_seed(seed: int = 42):
 
 
 # %%
-device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+device = torch.device(
+    "cuda") if torch.cuda.is_available() else torch.device("cpu")
 
 
 class CCV1_Trainer:
     def __init__(
         self,
         data_model: DataModule,
-        model,
+        model: nn.Module,
         device: torch.device = device,
-        
+
     ) -> None:
         """
         Jan
@@ -52,63 +54,85 @@ class CCV1_Trainer:
         self.device = device
         self.evaluation = Evaluation()
 
+    def setup_wandb_run(self, project_name: str, run_group: str, fold: int, lr: float, num_epochs: int, model_architecture: str):
+        """
+        Thomas
+        Sets a new run up (used for k-fold)
+        :param str project_name: Name of the project in wandb.
+        :param str run_group: Name of the project in wandb.
+        :param str fold: number of the executing fold
+        :param int lr: learning rate of the model
+        :param int num_epochs: number of epochs to train
+        :param str model_architecture: Modeltype (architectur) of the model
+        """
+        # init wandb
+        self.run = wandb.init(
+            project=project_name,
+            entity="deeptier",
+            name=f"{fold}-Fold",
+            group=run_group,
+            config={
+                "learning rate": lr,
+                "epochs": num_epochs,
+                "model architecture": model_architecture,
+            }
+        )
+
     def train_model(
         self,
-        run_name: str,
+        run_group: str,
         model_architecture: str,
         num_epochs: int,
         loss_module: nn = nn.CrossEntropyLoss(),
         test_model: bool = False,
         project_name: str = "ccv1",
         batchsize_train_data: int = 64,
-        lr= 1e-3,
-        gradient_tracking_freq:int=1000
+        lr: float = 1e-3
     ) -> None:
         """
         Jan
         To train a pytorch model.
-        :param str modeltype: Modeltype (architectur) of the model -> to structure wandb
-        :param str run_name: Name of a single run.
-        :param int num_epochs:
+        :param str run_group: Name of the run group (kfolds).
+        :param str model_architecture: Modeltype (architectur) of the model
+        :param int num_epochs: number of epochs to train
         :param nn.CrossEntropyLoss loss_module: Loss used for the competition
         :param int test_model: If true, it only loops over the first train batch. -> For the overfitting test.
         :param str project_name: Name of the project in wandb.
         :param int batchsize: batchsize of the training data
         :param int lr: learning rate of the model
-        :param int gradient_tracking_freq: #TODO
         """
-        # wandb setup
-        run = wandb.init(
-            project=project_name,
-            entity="deeptier",
-            name=run_name,
-            config={
-                "learning rate": lr,
-                "epochs": num_epochs,
-                "model architecture": model_architecture,
-            },
-        )
-        
+
         # train loop over folds
         if test_model:
-            n_folds=1
+            n_folds = 1
         else:
-            n_folds=5
-        for fold in range(n_folds):
+            n_folds = 5
+        for fold in tqdm(range(n_folds), unit="fold", desc="Fold-Iteration"):
+
+            # setup a new wandb run for the fold -> fold runs are grouped by name
+            self.setup_wandb_run(project_name, run_group,
+                                 fold, lr, num_epochs, model_architecture)
+
+            # prepare the kfold and dataloaders
             self.data_model.prepare_data(fold)
-            self.train_loader = self.data_model.train_dataloader(batchsize_train_data)
+            self.train_loader = self.data_model.train_dataloader(
+                batchsize_train_data)
             self.val_loader = self.data_model.val_dataloader()
+
             # Overfitting Test for first batch
             if test_model:
                 self.train_loader = [next(iter(self.train_loader))]
+
+            # prepare the model
             model = self.model()
-            optimizer = optim.Adam(model.parameters(),lr=lr)
-            # training
+            optimizer = optim.Adam(model.parameters(), lr=lr)
+
+            # training mode
             model.train()
             model.to(device)
             # train loop over epochs
-            batchiter = 1
-            for epoch in tqdm(range(num_epochs)):
+            batch_iter = 1
+            for epoch in tqdm(range(num_epochs), unit="epoch", desc="Epoch-Iteration"):
                 loss_train = np.array([])
                 label_train_data = np.empty((0, 8))
                 pred_train_data = np.array([])
@@ -127,7 +151,7 @@ class CCV1_Trainer:
                     loss.backward()
                     optimizer.step()
 
-                    self.evaluation.per_batch(batchiter,epoch,loss)
+                    self.evaluation.per_batch(batch_iter, epoch, loss)
 
                     # data for evaluation
                     label_train_data = np.concatenate(
@@ -138,10 +162,14 @@ class CCV1_Trainer:
                         (pred_train_data, predict_train), axis=0
                     )
                     loss_train = np.append(loss_train, loss.item())
-                    batchiter +=1
+
+                    # iter next batch
+                    batch_iter += 1
+
                 # wandb per epoch
                 pred_val, label_val = self.predict(model, self.val_loader)
-                loss_val = loss_module(torch.tensor(pred_val), torch.tensor(label_val))
+                loss_val = loss_module(torch.tensor(
+                    pred_val), torch.tensor(label_val))
                 self.evaluation.per_epoch(
                     epoch,
                     loss_train.mean(),
@@ -152,9 +180,13 @@ class CCV1_Trainer:
                     label_val,
                 )
 
-            # wandb per run
-            self.evaluation.per_model(label_val, pred_val, self.data_model.val.data)
+            # wandb per model
+            self.evaluation.per_model(
+                label_val, pred_val, self.data_model.val.data)
+            self.run.finish()
+        # new model instance for a new k-fold
         self.model_fold5 = model
+
     def predict(self, model: nn.Module, data_loader: DataLoader):
         """
         Jan
@@ -179,7 +211,7 @@ class CCV1_Trainer:
                 predictions = np.concatenate(
                     (predictions, preds.data.cpu().numpy()), axis=0
                 )
-                
+
                 # checks if labels columns exists -> if not exists test batch
                 if 'label' in batch.keys():
                     data_labels = batch["label"].to(self.device)
@@ -197,7 +229,8 @@ class CCV1_Trainer:
         """
         # prediction off the test set
         prediction_test, _ = self.predict(self.model_fold5, self.test_loader)
-        results_df = pd.DataFrame(prediction_test, columns=self.evaluation.classes)
+        results_df = pd.DataFrame(
+            prediction_test, columns=self.evaluation.classes)
         submit_df = pd.concat(
             [self.data_model.test.data.reset_index()["id"], results_df], axis=1
         )
