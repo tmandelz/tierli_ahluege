@@ -49,6 +49,12 @@ class CCV1Transformer:
                     transforms.Resize((20, 20), antialias=True),
                 ]
             )
+        elif preprocessing_transformer == "model_specific":
+            self.preprocessing_transformer = transforms.Compose(
+                [
+                   None_Transform()
+                ]
+            )
 
         # determine transformation steps for pretrained Models
         if pretrained_transformer == "efficientnet":
@@ -56,6 +62,18 @@ class CCV1Transformer:
                 [
                     transforms.Resize(
                         (256, 256), interpolation=transforms.InterpolationMode.BICUBIC
+                    ),
+                    transforms.CenterCrop(224),
+                    transforms.Normalize(
+                        mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
+                    ),
+                ]
+            )
+        elif pretrained_transformer == "resnet":
+            self.pretrained_transformer = transforms.Compose(
+                [
+                    transforms.Resize(
+                        (232, 232), interpolation=transforms.InterpolationMode.BILINEAR
                     ),
                     transforms.CenterCrop(224),
                     transforms.Normalize(
