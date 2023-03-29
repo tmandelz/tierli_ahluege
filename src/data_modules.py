@@ -34,9 +34,8 @@ class ImagesDataset(Dataset):
         :rtype: dic
 
         """
-        image = Image.open(
-            "./competition_data/" + self.data.iloc[index]["filepath"]
-        ).convert("RGB")
+        path = r"./competition_data/" + self.data.iloc[index]["filepath"]
+        image =  Image.open(path).convert("RGB")
         
         image = self.transform(image)
         image_id = self.data.index[index]
