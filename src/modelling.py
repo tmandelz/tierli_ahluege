@@ -67,6 +67,7 @@ class CCV1_Trainer:
         """
         # init wandb
         self.run = wandb.init(
+            settings=wandb.Settings(start_method="thread"),
             project=project_name,
             entity="deeptier",
             name=f"{fold}-Fold",
