@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 from PIL import Image
 from strenum import StrEnum
 
+
 class Animal(StrEnum):
     ANTELOPE = "antelope_duiker"
     BIRD = "bird"
@@ -16,6 +17,7 @@ class Animal(StrEnum):
     MONKEY = "monkey_prosimian",
     RODENT = "rodent"
 
+
 class Evaluation:
     def __init__(self, data_classes: list = [animal.value for animal in Animal]) -> None:
         """
@@ -24,16 +26,17 @@ class Evaluation:
         """
         self.classes = data_classes
 
-    def per_batch(self,index_batch:int,epoch:int, loss_batch:float) -> None:
+    def per_batch(self, index_batch: int, epoch: int, loss_batch: float) -> None:
         """
         Thomas
         Logs the loss of a batch
         """
-        wandb.log({"index_batch":index_batch,"epoch":epoch,"loss batch": loss_batch})
+        wandb.log({"index_batch": index_batch,
+                  "epoch": epoch, "loss batch": loss_batch})
 
     def per_epoch(
         self,
-        epoch:int,
+        epoch: int,
         loss_train: float,
         pred_train: np.array,
         label_train: np.array,
@@ -63,7 +66,7 @@ class Evaluation:
             )
             for animal in range(len(self.classes))
         }
-        log = {"epoch":epoch,"Loss train": loss_train, "Loss val": loss_val}
+        log = {"epoch": epoch, "Loss train": loss_train, "Loss val": loss_val}
         wandb.log({**f1_train, **f1_test, **log})
 
     def per_model(self, label_val, pred_val, val_data) -> None:
@@ -79,7 +82,8 @@ class Evaluation:
         wrong_classified = np.where(self.true_label != self.true_pred)[0]
 
         self.plot_16_animals(
-            np.random.choice(wrong_classified, replace=False, size=16), val_data
+            np.random.choice(wrong_classified, replace=False,
+                             size=16), val_data
         )
 
         wandb.log(
@@ -94,17 +98,20 @@ class Evaluation:
 
         data_wrong_class = val_data.iloc[wrong_classified]
         site_most_wrong = data_wrong_class[
-            data_wrong_class["site"] == data_wrong_class["site"].value_counts().index[0]
+            data_wrong_class["site"] == data_wrong_class["site"].value_counts(
+            ).index[0]
         ]
         if len(site_most_wrong) < 16:
             self.plot_16_animals(range(len(site_most_wrong)), data_wrong_class)
         else:
             self.plot_16_animals(
-                np.random.choice(range(len(site_most_wrong)), size=16, replace=False),
+                np.random.choice(range(len(site_most_wrong)),
+                                 size=16, replace=False),
                 data_wrong_class,
             )
 
-        plt.suptitle("worst site: " + str(data_wrong_class["site"][0]), size=120)
+        plt.suptitle("worst site: " +
+                     str(data_wrong_class["site"][0]), size=120)
         wandb.log({"Bad site": plt})
         plt.close()
 
@@ -119,9 +126,9 @@ class Evaluation:
         for n, variable in enumerate(index):
             ax = fig.add_subplot(4, 4, n + 1)
             datapoint = data.iloc[variable]
-            ax.imshow(Image.open("./competition_data/" + datapoint["filepath"]))
+            ax.imshow(Image.open(
+                "./competition_data/" + datapoint["filepath"]))
             ax.set_title(
                 f"{self.classes[self.true_pred[variable]]} anstatt {self.classes[self.true_label[variable]]}",
                 size=60,
             )
-
