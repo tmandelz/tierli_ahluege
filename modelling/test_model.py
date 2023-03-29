@@ -5,22 +5,16 @@ if os.getcwd().endswith("modelling"):
     os.chdir("..")
 
 #%%
-is_cscs_run = False
+is_cscs_run = True
 if is_cscs_run:
-    os.chdir("ccv1/tierli_ahluege")
+    os.chdir("ccv1/tierli_ahluege/")
     print(os.getcwd())
 #%%
-
-import pandas as pd
-import numpy as np
 from src.modelling import CCV1_Trainer
 from src.augmentation import CCV1Transformer,None_Transform
-from src.data_modules import DataModule,ImagesDataset
+from src.data_modules import DataModule
 from torch import nn
 import torch
-import torchvision.models as models
-import torch.optim as optim
-from tqdm import tqdm
 from torchvision import transforms
 
 #%%
@@ -30,7 +24,7 @@ from torchvision import transforms
 
 # %%
 test_transformer = CCV1Transformer(
-    None_Transform(), "standard", "mlp"
+    None_Transform(), "overfitting", "mlp"
 ).getCompose()
 
 test_transformer
@@ -39,21 +33,19 @@ test_transformer
 class base_mlp(nn.Module):
     def __init__(self):
         super().__init__()
-        self.fc1 = nn.Linear(150528, 8)
+        self.fc1 = nn.Linear(1200, 8)
 
     def forward(self, x):
         x = torch.flatten(x, 1)  # flatten all dimensions except batch
         x = self.fc1(x)
         return x
 
-# model = base_mlp()
 simple_mlp = CCV1_Trainer(
     DataModule(basic_transform=test_transformer),
     base_mlp,
 )
-# optimizer = optim.Adam(model.parameters())
 # %%
-simple_mlp.train_model("overfitting","base_mlp", batchsize_train_data=16, num_epochs=6,test_model=True,lr=0.00005)
+simple_mlp.train_model("overfitting_128_5","base_mlp", batchsize_train_data=128, num_epochs=3,test_model=False,lr=0.1)
 #%%
 simple_mlp.submit_file("test")
 
