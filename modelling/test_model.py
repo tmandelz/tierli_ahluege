@@ -45,7 +45,14 @@ simple_mlp = CCV1_Trainer(
     base_mlp,
 )
 # %%
-simple_mlp.train_model("overfitting_128_5","base_mlp", batchsize_train_data=128, num_epochs=3,test_model=False,lr=0.1)
+# simple_mlp.train_model("overfitting_128_5","base_mlp", batchsize_train_data=128, num_epochs=3,test_model=False,lr=0.1)
+
+#%%
+# simple_mlp.train_model("overfitting_128_5_nocv","base_mlp", batchsize_train_data=128,cross_validation=False, num_epochs=3,test_model=False,lr=0.1)
+
+#%%
+simple_mlp.train_model("overfitting_16_5_onebatch","base_mlp", batchsize_train_data=16,cross_validation=False, num_epochs=10,test_model=True,lr=0.1)
+
 #%%
 simple_mlp.submit_file("test")
 

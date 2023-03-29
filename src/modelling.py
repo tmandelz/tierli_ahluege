@@ -85,6 +85,7 @@ class CCV1_Trainer:
         num_epochs: int,
         loss_module: nn = nn.CrossEntropyLoss(),
         test_model: bool = False,
+        cross_validation: bool = True,
         project_name: str = "ccv1",
         batchsize_train_data: int = 64,
         lr: float = 1e-3
@@ -96,17 +97,19 @@ class CCV1_Trainer:
         :param str model_architecture: Modeltype (architectur) of the model
         :param int num_epochs: number of epochs to train
         :param nn.CrossEntropyLoss loss_module: Loss used for the competition
-        :param int test_model: If true, it only loops over the first train batch. -> For the overfitting test.
+        :param int test_model: If true, it only loops over the first train batch and it sets only one fold. -> For the overfitting test.
+        :param int cross_validation: If true, creates 5 cross validation folds to loop over, else only one fold is used for training
         :param str project_name: Name of the project in wandb.
         :param int batchsize: batchsize of the training data
         :param int lr: learning rate of the model
         """
 
         # train loop over folds
-        if test_model:
-            n_folds = 1
-        else:
+        if cross_validation:
             n_folds = 5
+        else:
+            n_folds = 1
+
         for fold in tqdm(range(n_folds), unit="fold", desc="Fold-Iteration"):
 
             # setup a new wandb run for the fold -> fold runs are grouped by name
@@ -180,10 +183,10 @@ class CCV1_Trainer:
                     label_val,
                 )
 
+            # wandb per model
+            self.evaluation.per_model(
+                label_val, pred_val, self.data_model.val.data)
             self.run.finish()
-        # wandb per model
-        self.evaluation.per_model(
-            label_val, pred_val, self.data_model.val.data)
         # new model instance for a new k-fold
         self.model_fold5 = model
 
