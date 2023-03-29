@@ -1,6 +1,6 @@
 ﻿Pipfile.lock
-./competition_data/test_features
-./competition_data/train_features
+competition_data/test_features/*
+competition_data/train_features/*
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
