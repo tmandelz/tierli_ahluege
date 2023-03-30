@@ -89,6 +89,7 @@ class CCV1_Trainer:
         cross_validation: bool = True,
         project_name: str = "ccv1",
         batchsize_train_data: int = 64,
+        num_workers: int = 16,
         lr: float = 1e-3
     ) -> None:
         """
@@ -102,6 +103,7 @@ class CCV1_Trainer:
         :param int cross_validation: If true, creates 5 cross validation folds to loop over, else only one fold is used for training
         :param str project_name: Name of the project in wandb.
         :param int batchsize: batchsize of the training data
+        :param int num_workers: number of workers for the data loader (optimize if GPU usage not optimal) -> default 16
         :param int lr: learning rate of the model
         """
 
@@ -120,7 +122,7 @@ class CCV1_Trainer:
             # prepare the kfold and dataloaders
             self.data_model.prepare_data(fold)
             self.train_loader = self.data_model.train_dataloader(
-                batchsize_train_data)
+                batchsize_train_data,num_workers)
             self.val_loader = self.data_model.val_dataloader()
 
             # Overfitting Test for first batch
