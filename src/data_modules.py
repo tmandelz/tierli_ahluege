@@ -97,7 +97,7 @@ class DataModule(pl.LightningDataModule):
         """
         :param int batch_size: batch size of the training data -> default 64
         """
-        return DataLoader(self.train, batch_size=batch_size,num_workers=12,shuffle=True)
+        return DataLoader(self.train, batch_size=batch_size,num_workers=20,shuffle=True)
 
     def val_dataloader(self):
         return DataLoader(self.val, batch_size=256)
