@@ -64,16 +64,18 @@ resnet_transformer = CCV1Transformer(
 ).getCompose()
 resnet = CCV1_Trainer(DataModule(resnet_transformer), resnet50_)
 resnet.train_model("resnet with random perspective", "resnet", num_epochs=6, cross_validation=False,batchsize_train_data=128)
-# %%
-# resnet_transformer = CCV1Transformer(
-#     transforms.Compose([transforms.AugMix()]), "model_specific", "resnet"
-# ).getCompose()
-# resnet = CCV1_Trainer(DataModule(resnet_transformer), resnet50_)
-# resnet.train_model("resnet with augmix", "resnet", num_epochs=6, cross_validation=False,batchsize_train_data=128)
+
 # %%
 resnet_transformer = CCV1Transformer(
     transforms.Compose([transforms.ColorJitter(brightness=0.05)]), "model_specific", "resnet"
 ).getCompose()
 resnet = CCV1_Trainer(DataModule(resnet_transformer), resnet50_)
 resnet.train_model("resnet with color brightness 0.05", "resnet", num_epochs=6, cross_validation=False,batchsize_train_data=128)
+
+# %%
+resnet_transformer = CCV1Transformer(
+    transforms.Compose([transforms.AugMix()]), "model_specific", "resnet"
+).getCompose(True)
+resnet = CCV1_Trainer(DataModule(resnet_transformer), resnet50_)
+resnet.train_model("resnet with augmix", "resnet", num_epochs=8, cross_validation=False,batchsize_train_data=128)
 # %%
