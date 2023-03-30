@@ -92,13 +92,24 @@ class CCV1Transformer:
             # TODO: convnext
             self.pretrained_transformer = transforms.Compose([])
 
-    def getCompose(self):
+    def getCompose(self,turn_off_to_tensor:bool=False):
+        """
+        :param turn_off_to_tensor:bool: don't use transforms.ToTensor() for certain augmentations
+        """
+        if turn_off_to_tensor:
+            first_trans = None_Transform()
+            sec_trans=transforms.ToTensor()
+        else:
+            first_trans = transforms.ToTensor()
+            sec_trans=None_Transform()
         return transforms.Compose(
             [
                 # add a to Tensor in front off all augmentations
-                transforms.ToTensor(),
+                first_trans,
                 # first execute the augmenation steps
                 self.data_augmentation_transformer,
+                # for special data augmentation methods
+                sec_trans,
                 # second execute the preprocessing steps
                 self.preprocessing_transformer,
                 # third execute the pretrained model step
