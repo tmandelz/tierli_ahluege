@@ -93,16 +93,16 @@ class DataModule(pl.LightningDataModule):
         self.val = ImagesDataset(val_features, self.exclude_augmentation_transformer, val_labels)
         
 
-    def train_dataloader(self, batch_size: int = 64):
+    def train_dataloader(self, batch_size: int = 128):
         """
         :param int batch_size: batch size of the training data -> default 64
         """
-        return DataLoader(self.train, batch_size=batch_size)
+        return DataLoader(self.train, batch_size=batch_size,num_workers=12,shuffle=True)
 
     def val_dataloader(self):
-        return DataLoader(self.val, batch_size=64)
+        return DataLoader(self.val, batch_size=256)
 
     def test_dataloader(self):
-        return DataLoader(self.test, batch_size=64)
+        return DataLoader(self.test, batch_size=256)
 
 # %%
