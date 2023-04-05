@@ -52,7 +52,7 @@ class CCV1Transformer:
         elif preprocessing_transformer == "model_specific":
             self.preprocessing_transformer = transforms.Compose(
                 [
-                   None_Transform()
+                    None_Transform()
                 ]
             )
 
@@ -92,16 +92,16 @@ class CCV1Transformer:
             # TODO: convnext
             self.pretrained_transformer = transforms.Compose([])
 
-    def getCompose(self,turn_off_to_tensor:bool=False):
+    def getCompose(self, turn_off_to_tensor: bool = False):
         """
         :param turn_off_to_tensor:bool: don't use transforms.ToTensor() for certain augmentations
         """
         if turn_off_to_tensor:
             first_trans = None_Transform()
-            sec_trans=transforms.ToTensor()
+            sec_trans = transforms.ToTensor()
         else:
             first_trans = transforms.ToTensor()
-            sec_trans=None_Transform()
+            sec_trans = None_Transform()
         return transforms.Compose(
             [
                 # add a to Tensor in front off all augmentations

@@ -122,7 +122,7 @@ class CCV1_Trainer:
             # prepare the kfold and dataloaders
             self.data_model.prepare_data(fold)
             self.train_loader = self.data_model.train_dataloader(
-                batchsize_train_data,num_workers)
+                batchsize_train_data, num_workers)
             self.val_loader = self.data_model.val_dataloader()
 
             # Overfitting Test for first batch

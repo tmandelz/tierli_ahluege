@@ -98,8 +98,8 @@ class Evaluation:
 
         data_wrong_class = val_data.iloc[wrong_classified]
         site_most_wrong = data_wrong_class[
-            data_wrong_class["site"] == data_wrong_class["site"].value_counts(
-            ).index[0]
+            data_wrong_class["site"] == data_wrong_class["site"].value_counts(normalize=True
+                                                                              ).index[0]
         ]
         if len(site_most_wrong) < 16:
             self.plot_16_animals(range(len(site_most_wrong)), data_wrong_class)
