@@ -16,6 +16,7 @@ sklearn = "*"
 scikit-learn = "*"
 matplotlib = "*"
 strenum = "*"
+jupyter-contrib-nbextensions = "*"
 
 [dev-packages]
 ipykernel = "*"
