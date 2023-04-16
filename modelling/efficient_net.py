@@ -42,5 +42,5 @@ efficientnet = CCV1_Trainer(DataModule(efficientnet_transformer), efficient_)
 efficientnet.train_model("without augmentation3", "efficientnet", num_epochs=6, test_model=False,batchsize_train_data=128)
 
 # %%
-efficientnet.submit_file("test_efficient")
+efficientnet.submission("test_efficient")
 

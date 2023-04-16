@@ -227,7 +227,16 @@ class CCV1_Trainer:
         model.train()
         return predictions, true_labels
 
-    def submit_file(self, submit_name: str):
+    def submission(self, submit_name: str):
+        """
+        Thomas 
+        Makes a submission file and saves the models state
+        :param str submit_name: name of the file
+        """
+        self._save_model(submit_name=submit_name)
+        self._submit_file(submit_name=submit_name)
+
+    def _submit_file(self, submit_name: str):
         """
         Jan
         Creates the file for the submission
@@ -240,6 +249,19 @@ class CCV1_Trainer:
         submit_df = pd.concat(
             [self.data_model.test.data.reset_index()["id"], results_df], axis=1
         )
-        submit_df.set_index("id").to_csv(f"./data_submit/{submit_name}.csv")
+        path = f"./data_submit/{submit_name}.csv"
+        submit_df.set_index("id").to_csv(path)
+        print(f"Saved submission: {submit_name} to {path}")
+
+    def _save_model(self, submit_name: str):
+        """
+        Thomas 
+        saves the models state
+        :param str submit_name: name of the model file
+        """
+        path = f"./model_submit/{submit_name}.pth"
+        torch.save(self.model_fold5.state_dict(),
+                   path)
+        print(f"Saved model: {submit_name} to {path}")
 
 # %%
