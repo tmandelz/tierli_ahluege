@@ -1,7 +1,6 @@
 # %%
 from torchvision import transforms
 from torch import nn
-
 # %%
 
 
@@ -61,7 +60,7 @@ class CCV1Transformer:
             self.pretrained_transformer = transforms.Compose(
                 [
                     transforms.Resize(
-                        (256, 256), interpolation=transforms.InterpolationMode.BICUBIC
+                        (256, 256), antialias=True, interpolation=transforms.InterpolationMode.BICUBIC
                     ),
                     transforms.CenterCrop(224),
                     transforms.Normalize(
@@ -73,7 +72,7 @@ class CCV1Transformer:
             self.pretrained_transformer = transforms.Compose(
                 [
                     transforms.Resize(
-                        (232, 232), interpolation=transforms.InterpolationMode.BILINEAR
+                        (232, 232), antialias=True, interpolation=transforms.InterpolationMode.BILINEAR
                     ),
                     transforms.CenterCrop(224),
                     transforms.Normalize(
@@ -89,8 +88,15 @@ class CCV1Transformer:
                 ]
             )
         elif pretrained_transformer == "convnext":
-            # TODO: convnext
-            self.pretrained_transformer = transforms.Compose([])
+            self.pretrained_transformer = transforms.Compose(
+                [
+                    transforms.Resize(
+                        (224, 224), antialias=True, interpolation=transforms.InterpolationMode.BILINEAR
+                    ),
+                    transforms.CenterCrop(224),
+                    transforms.Normalize(
+                        mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)),
+                ])
 
     def getCompose(self, turn_off_to_tensor: bool = False):
         """
