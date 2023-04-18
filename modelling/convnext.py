@@ -63,6 +63,12 @@ convnext.submission(model_name)
 
 
 #%%
+model_name = "convnext_tiny_cv"
+convnext = CCV1_Trainer(DataModule(convnext_transformer), convnext_,)
+convnext.train_model(model_name, pretrained_model, num_epochs=5, cross_validation=True,test_model=False,batchsize_train_data=128,lr = 3e-4)
+
+
+#%%
 def convnext_():
     model = models.convnext_tiny(weights=True,)
     model.classifier[2] =nn.Dropout(0.2)
