@@ -61,6 +61,13 @@ convnext.train_model(model_name, pretrained_model, num_epochs=5, cross_validatio
 # %%
 convnext.submission(model_name)
 
+# %%
+model_name = "convnext_tiny_overfit_try"
+convnext = CCV1_Trainer(DataModule(convnext_transformer), convnext_,)
+convnext.train_model(model_name, pretrained_model, num_epochs=20, cross_validation=False,test_model=False,batchsize_train_data=128,lr = 3e-4)
+
+# %%
+convnext.submission(model_name)
 
 #%%
 model_name = "convnext_tiny_cv"
