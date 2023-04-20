@@ -69,6 +69,24 @@ convnext.train_model(model_name, pretrained_model, num_epochs=20, cross_validati
 # %%
 convnext.submission(model_name)
 
+# %%
+def convnext_weights():
+    model = models.convnext_tiny(weights=False,)
+    model.classifier[2] = nn.Linear(in_features=768, out_features=8, bias=True)
+   
+    return model
+convnext_weights().classifier
+# %%
+model_name = "convnext_tiny_weights_training"
+convnext = CCV1_Trainer(DataModule(convnext_transformer), convnext_weights,)
+convnext.train_model(model_name, pretrained_model, num_epochs=20, cross_validation=False,test_model=False,batchsize_train_data=128,lr = 3e-4)
+
+# %%
+convnext.submission(model_name)
+
+
+
+
 #%%
 model_name = "convnext_tiny_cv"
 convnext = CCV1_Trainer(DataModule(convnext_transformer), convnext_,)
