@@ -5,7 +5,7 @@ if os.getcwd().endswith("modelling"):
     os.chdir("..")
 
 #%%
-is_cscs_run = True
+is_cscs_run = False
 if is_cscs_run:
     os.chdir("ccv1/tierli_ahluege/")
     print(os.getcwd())
@@ -78,4 +78,28 @@ resnet_transformer = CCV1Transformer(
 ).getCompose(True)
 resnet = CCV1_Trainer(DataModule(resnet_transformer), resnet50_)
 resnet.train_model("resnet with augmix", "resnet", num_epochs=8, cross_validation=False,batchsize_train_data=128)
+
 # %%
+resnet_transformer = CCV1Transformer(
+    transforms.Compose([transforms.RandomRotation(20),
+                        transforms.RandomHorizontalFlip(),
+                        transforms.RandomPerspective()]), "model_specific", "resnet"
+).getCompose(True)
+
+resnet = CCV1_Trainer(DataModule(resnet_transformer), resnet50_)
+resnet.train_model("resnet_augment_combi", "resnet", num_epochs=6, cross_validation=False,
+                    batchsize_train_data=32, num_workers=0)
+
+# %%
+resnet_transformer = CCV1Transformer(
+    transforms.Compose([transforms.RandomRotation(20),
+                        transforms.RandomHorizontalFlip(),
+                        transforms.RandomPerspective(),
+                        transforms.ColorJitter(brightness=0.05, contrast=0.3, saturation=0.3, hue=0.3)
+                        ]), "model_specific", "resnet"
+).getCompose(True)
+
+resnet = CCV1_Trainer(DataModule(resnet_transformer), resnet50_)
+resnet.train_model("resnet_augment_combi_all", "resnet", num_epochs=12, cross_validation=False,
+                    batchsize_train_data=32, num_workers=0)
+
