@@ -28,6 +28,7 @@ class ImagesDataset(Dataset):
         self.label = y_df
         self.transform = transform
         self.include_megadetector = include_megadetector
+        self.threshhold_megadetector =threshhold_megadetector
 
     def __getitem__(self, index: int) -> dict:
         """
@@ -39,8 +40,10 @@ class ImagesDataset(Dataset):
         """
         path = r"./competition_data/" + self.data.iloc[index]["filepath"]
         image = Image.open(path).convert("RGB")
-        if self.include_megadetector:
-            pass
+        if self.include_megadetector and self.data.iloc[index]["conf"] >self.threshhold_megadetector:
+            y,x,height,width = self.data.iloc[index]["bbox_transformed"]
+            image_tensor = transforms.ToTensor()(image)
+            image = transforms.functional.crop(image_tensor,y,x,height,width)
         image = self.transform(image)
         image_id = self.data.index[index]
 
