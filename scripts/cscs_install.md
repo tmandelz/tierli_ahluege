@@ -48,6 +48,9 @@ module avail git-lfs
 
 module load git-lfs
 
+cd ccv1/tierli_ahluege
+git lfs install
+
 ## to update use 
 
-git lfs pull
+git pull
