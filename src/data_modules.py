@@ -15,16 +15,19 @@ class ImagesDataset(Dataset):
     """
 
     def __init__(
-        self, x_df: pd.DataFrame, transform: transforms, y_df: pd.DataFrame = None
+        self, x_df: pd.DataFrame, transform: transforms, y_df: pd.DataFrame = None, include_megadetector: bool= False,threshhold_megadetector:float =0.5
     ):
         """
         :param pd.DataFrame x_df: links of the jpg
         :param transforms transform: for basic transformation (like normalisation)
         :param pd.DataFrame y_df: labels
+        :param bool include_megadetector: add a megadetector transformation
+        :param float threshhold_megadetector: threshhold for box if the megadetector is activated
         """
         self.data = x_df
         self.label = y_df
         self.transform = transform
+        self.include_megadetector = include_megadetector
 
     def __getitem__(self, index: int) -> dict:
         """
@@ -36,7 +39,8 @@ class ImagesDataset(Dataset):
         """
         path = r"./competition_data/" + self.data.iloc[index]["filepath"]
         image = Image.open(path).convert("RGB")
-
+        if self.include_megadetector:
+            pass
         image = self.transform(image)
         image_id = self.data.index[index]
 
@@ -60,6 +64,9 @@ class DataModule(pl.LightningDataModule):
         train_features_path: str = "./competition_data/train_features_with_split.csv",
         train_labels_path: str = "./competition_data/train_labels_with_split.csv",
         test_features_path: str = "./competition_data/test_features.csv",
+        include_megadetector_train: bool =False,
+        include_megadetector_test: bool = False,
+        threshhold_megadetector:float=0.5
     ):
         """
         Jan
@@ -67,7 +74,14 @@ class DataModule(pl.LightningDataModule):
         :param str train_features_path:
         :param str train_labels_path:
         :param str test_features_path:
+        :param bool include_megadetector_train: add a megadetector transformation for training
+        :param bool include_megadetector_test: add a megadetector transformation for testing
+        :param float threshhold_megadetector: threshhold for box if the megadetector is activated
         """
+        # activation for megadetector
+        self.include_megadetector_train = include_megadetector_train
+        self.include_megadetector_test = include_megadetector_test
+        self.threshhold_megadetector = threshhold_megadetector
         # load_data
         self.train_features = pd.read_csv(train_features_path, index_col="id")
         self.train_labels = pd.read_csv(train_labels_path, index_col="id")
@@ -82,7 +96,7 @@ class DataModule(pl.LightningDataModule):
 
         # exclude data augmentation compose
         self.test = ImagesDataset(
-            test_features, self.exclude_augmentation_transformer)
+            test_features, self.exclude_augmentation_transformer,include_megadetector_test)
 
     def prepare_data(self,
                      fold_number) -> None:
@@ -97,9 +111,9 @@ class DataModule(pl.LightningDataModule):
                                              != fold_number, self.train_labels.columns != "split"]
 
         self.train = ImagesDataset(
-            train_features, self.basic_transform, train_labels)
+            train_features, self.basic_transform, train_labels,self.include_megadetector_train)
         self.val = ImagesDataset(
-            val_features, self.exclude_augmentation_transformer, val_labels)
+            val_features, self.exclude_augmentation_transformer, val_labels,self.include_megadetector_test)
 
     def train_dataloader(self, batch_size: int = 128, num_workers: int = 16):
         """
