@@ -36,3 +36,18 @@ URL zum eingeben: https://{username}.jupyter.cscs.ch/user/{username}/?token={Tok
 BSP:https://tmandelz.jupyter.cscs.ch/user/tmandelz/?token=02be80350ca324d4b7a07e5191c2d7d6
 
 choose ccv1 in jupyternotebook
+
+# Git-lfs in CSCS
+
+ssh {user}daint.cscs.ch
+module load daint-gpu
+module load EasyBuild-custom/cscs
+eb git-lfs-3.2.0.eb --try-software-version=3.3.0 -r
+
+module avail git-lfs
+
+module load git-lfs
+
+## to update use 
+
+git lfs pull
