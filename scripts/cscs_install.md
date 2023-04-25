@@ -51,6 +51,6 @@ module load git-lfs
 cd ccv1/tierli_ahluege
 git lfs install
 
-## to update use 
+## to update use
 
-git pull
+git lfs pull
