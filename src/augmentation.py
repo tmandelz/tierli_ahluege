@@ -91,7 +91,7 @@ class CCV1Transformer:
             self.pretrained_transformer = transforms.Compose(
                 [
                     transforms.Resize(
-                        (224, 224), antialias=True, interpolation=transforms.InterpolationMode.BILINEAR
+                        (236, 236), antialias=True, interpolation=transforms.InterpolationMode.BILINEAR
                     ),
                     transforms.CenterCrop(224),
                     transforms.Normalize(
