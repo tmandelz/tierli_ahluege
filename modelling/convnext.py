@@ -17,11 +17,12 @@ if os.getcwd().endswith("modelling"):
     os.chdir("..")
 
 #%%
-is_cscs_run = True
+is_cscs_run = False
 
 if is_cscs_run:
     os.chdir("ccv1/tierli_ahluege/")
     print(os.getcwd())
+
 #%%
 from src.modelling import CCV1_Trainer
 from src.augmentation import CCV1Transformer,None_Transform
@@ -36,11 +37,11 @@ from torchvision import transforms,models
 %env WANDB_SILENT=True
 
 #%%
-
-def convnext_():
+model = models.convnext_tiny(weights=True)
+# %%
+def convnext_tiny_():
     model = models.convnext_tiny(weights=True,)
     model.classifier[2] =nn.Linear(in_features=768, out_features=8, bias=True)
-   
     return model
 
 #%%
@@ -50,12 +51,8 @@ convnext_transformer = CCV1Transformer(
     transforms.Compose([None_Transform()]), "model_specific", pretrained_model
 ).getCompose(True)
 
-#%%
-convnext_().classifier
-#%%
-convnext_transformer
 # %%
-convnext = CCV1_Trainer(DataModule(convnext_transformer), convnext_,)
+convnext = CCV1_Trainer(DataModule(convnext_transformer), convnext_tiny_,)
 convnext.train_model(model_name, pretrained_model, num_epochs=5, cross_validation=False,test_model=False,batchsize_train_data=128,lr = 3e-4)
 
 # %%
@@ -63,33 +60,23 @@ convnext.submission(model_name)
 
 # %%
 model_name = "convnext_tiny_overfit_try"
-convnext = CCV1_Trainer(DataModule(convnext_transformer), convnext_,)
+convnext = CCV1_Trainer(DataModule(convnext_transformer), convnext_tiny_,)
 convnext.train_model(model_name, pretrained_model, num_epochs=20, cross_validation=False,test_model=False,batchsize_train_data=128,lr = 3e-4)
 
 # %%
 convnext.submission(model_name)
 
-# %%
-def convnext_weights():
-    model = models.convnext_tiny(weights=False,)
-    model.classifier[2] = nn.Linear(in_features=768, out_features=8, bias=True)
-   
-    return model
-convnext_weights().classifier
 # %%
 model_name = "convnext_tiny_weights_training"
-convnext = CCV1_Trainer(DataModule(convnext_transformer), convnext_weights,)
+convnext = CCV1_Trainer(DataModule(convnext_transformer), convnext_tiny_,)
 convnext.train_model(model_name, pretrained_model, num_epochs=20, cross_validation=False,test_model=False,batchsize_train_data=128,lr = 3e-4)
 
 # %%
 convnext.submission(model_name)
-
-
-
 
 #%%
 model_name = "convnext_tiny_cv"
-convnext = CCV1_Trainer(DataModule(convnext_transformer), convnext_,)
+convnext = CCV1_Trainer(DataModule(convnext_transformer), convnext_tiny_,)
 convnext.train_model(model_name, pretrained_model, num_epochs=5, cross_validation=True,test_model=False,batchsize_train_data=128,lr = 3e-4)
 
 
@@ -98,11 +85,7 @@ def convnext_():
     model = models.convnext_tiny(weights=True,)
     model.classifier[2] =nn.Dropout(0.2)
     model.classifier.add_module("3",nn.Linear(in_features=768, out_features=8, bias=True))
-   
     return model
-
-convnext_().classifier
-
 
 #%%
 model_name = "convnext_tiny_dropout_0.2"
@@ -110,11 +93,6 @@ pretrained_model = "convnext"
 convnext_transformer = CCV1Transformer(
     transforms.Compose([None_Transform()]), "model_specific", pretrained_model
 ).getCompose(True)
-
-#%%
-convnext_().classifier
-#%%
-convnext_transformer
 # %%
 convnext = CCV1_Trainer(DataModule(convnext_transformer), convnext_,)
 convnext.train_model(model_name, pretrained_model, num_epochs=5, cross_validation=False,test_model=False,batchsize_train_data=128,lr = 3e-4)
@@ -123,33 +101,22 @@ convnext.train_model(model_name, pretrained_model, num_epochs=5, cross_validatio
 convnext.submission(model_name)
 
 #%%
-def convnext_small():
+def convnext_small_():
     model = models.convnext_small(weights=True,)
     model.classifier[2] =nn.Linear(in_features=768, out_features=8, bias=True)
     return model
-
-convnext_small().classifier
-
-
 #%%
 model_name = "convnext_small"
 pretrained_model = "convnext"
 convnext_transformer = CCV1Transformer(
     transforms.Compose([None_Transform()]), "model_specific", pretrained_model
 ).getCompose(True)
-
-#%%
-convnext_transformer
 # %%
-convnext = CCV1_Trainer(DataModule(convnext_transformer), convnext_small,)
+convnext = CCV1_Trainer(DataModule(convnext_transformer), convnext_small_,)
 convnext.train_model(model_name, pretrained_model, num_epochs=5, cross_validation=False,test_model=False,batchsize_train_data=32,lr = 3e-4)
 
 # %%
 convnext.submission(model_name)
-
-
-
-
 
 
 #%%
@@ -159,7 +126,6 @@ def convnext_():
     model.classifier.add_module("3",nn.ReLU(inplace=True))
     model.classifier.add_module("4",nn.Dropout(0.5))
     model.classifier.add_module("5",nn.Linear(in_features=124, out_features=8, bias=True))
-   
     return model
 
 #%%
