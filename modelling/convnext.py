@@ -79,7 +79,17 @@ model_name = "convnext_tiny_cv"
 convnext = CCV1_Trainer(DataModule(convnext_transformer), convnext_tiny_,)
 convnext.train_model(model_name, pretrained_model, num_epochs=5, cross_validation=True,test_model=False,batchsize_train_data=128,lr = 3e-4)
 
+#%%
 
+model_name = "convnext_tiny_megadetector"
+convnext = CCV1_Trainer(DataModule(convnext_transformer,delete_unrecognized_mega=True,include_megadetector_train=True,include_megadetector_test=True), convnext_tiny_,)
+convnext.train_model(model_name, pretrained_model, num_epochs=5, cross_validation=True,test_model=False,batchsize_train_data=128,lr = 3e-4,num_workers=0)
+
+
+# %%
+model_name = "convnext_tiny_megadetector_only_crop"
+convnext = CCV1_Trainer(DataModule(convnext_transformer,delete_unrecognized_mega=False,include_megadetector_train=True,include_megadetector_test=True), convnext_tiny_,)
+convnext.train_model(model_name, pretrained_model, num_epochs=3, cross_validation=True,test_model=False,batchsize_train_data=128,lr = 3e-4,num_workers=0)
 #%%
 def convnext_():
     model = models.convnext_tiny(weights=True,)

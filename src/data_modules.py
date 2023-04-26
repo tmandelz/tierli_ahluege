@@ -5,6 +5,7 @@ from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
 from PIL import Image
 import pytorch_lightning as pl
+import ast
 
 
 # %%
@@ -38,12 +39,13 @@ class ImagesDataset(Dataset):
         :rtype: dic
 
         """
+        # TODO
         path = r"./competition_data/" + self.data.iloc[index]["filepath"]
         image = Image.open(path).convert("RGB")
-        if self.include_megadetector and self.data.iloc[index]["conf"] >self.threshhold_megadetector:
-            y,x,height,width = self.data.iloc[index]["bbox_transformed"]
+        if self.include_megadetector and self.data.iloc[index]["conf"] > self.threshhold_megadetector:
+            y,x,height,width = ast.literal_eval(self.data.iloc[index]["bbox_transformed"])
             image_tensor = transforms.ToTensor()(image)
-            image = transforms.functional.crop(image_tensor,y,x,height,width)
+            image = transforms.ToPILImage()(transforms.functional.crop(image_tensor,y,x,height,width))
         image = self.transform(image)
         image_id = self.data.index[index]
 
@@ -64,12 +66,13 @@ class DataModule(pl.LightningDataModule):
     def __init__(
         self,
         basic_transform: transforms,
-        train_features_path: str = "./competition_data/train_features_with_split.csv",
+        train_features_path: str = "./megadetector/megadetector_all_bbox_transformed.csv",
         train_labels_path: str = "./competition_data/train_labels_with_split.csv",
         test_features_path: str = "./competition_data/test_features.csv",
         include_megadetector_train: bool =False,
         include_megadetector_test: bool = False,
-        threshhold_megadetector:float=0.5
+        threshhold_megadetector:float=0.5,
+        delete_unrecognized_mega=False
     ):
         """
         Jan
@@ -80,15 +83,21 @@ class DataModule(pl.LightningDataModule):
         :param bool include_megadetector_train: add a megadetector transformation for training
         :param bool include_megadetector_test: add a megadetector transformation for testing
         :param float threshhold_megadetector: threshhold for box if the megadetector is activated
+        :param delete_unrecognized_mega: delete image where the megadetector don't recognize images
         """
         # activation for megadetector
         self.include_megadetector_train = include_megadetector_train
         self.include_megadetector_test = include_megadetector_test
         self.threshhold_megadetector = threshhold_megadetector
+        self.delete_unrecognized_mega = delete_unrecognized_mega
         # load_data
         self.train_features = pd.read_csv(train_features_path, index_col="id")
         self.train_labels = pd.read_csv(train_labels_path, index_col="id")
         test_features = pd.read_csv(test_features_path, index_col="id")
+
+        # TODO when file ready
+        #if self.include_megadetector_test and self.delete_unrecognized_mega:
+        #    test_features = test_features[test_features["conf"]>self.threshhold_megadetector]
 
         # prepare transforms
         self.basic_transform = basic_transform
@@ -98,8 +107,11 @@ class DataModule(pl.LightningDataModule):
             basic_transform.transforms[:1] + basic_transform.transforms[1 + 1:])
 
         # exclude data augmentation compose
+        # TODO when file ready
+        # self.test = ImagesDataset(
+        #     test_features, self.exclude_augmentation_transformer,include_megadetector_test)
         self.test = ImagesDataset(
-            test_features, self.exclude_augmentation_transformer,include_megadetector_test)
+            test_features, self.exclude_augmentation_transformer,False)
 
     def prepare_data(self,
                      fold_number) -> None:
@@ -112,6 +124,15 @@ class DataModule(pl.LightningDataModule):
                                            == fold_number, self.train_labels.columns != "split"]
         train_labels = self.train_labels.loc[self.train_labels["split"]
                                              != fold_number, self.train_labels.columns != "split"]
+        # delete files for megadetector
+        if self.include_megadetector_test and self.delete_unrecognized_mega:
+            val_labels = val_labels[val_features["conf"]>self.threshhold_megadetector]
+            val_features = val_features[val_features["conf"]>self.threshhold_megadetector]
+
+        if self.include_megadetector_train and self.delete_unrecognized_mega:
+            train_labels = train_labels[train_features["conf"]>self.threshhold_megadetector]
+            train_features = train_features[train_features["conf"]>self.threshhold_megadetector]
+        
 
         self.train = ImagesDataset(
             train_features, self.basic_transform, train_labels,self.include_megadetector_train)
