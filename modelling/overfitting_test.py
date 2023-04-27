@@ -39,8 +39,9 @@ class base_mlp(nn.Module):
         return x
 
 simple_mlp = CCV1_Trainer(
-    DataModule(basic_transform=test_transformer,delete_unrecognized_mega=True,include_megadetector_train=True,include_megadetector_test=True),
+    DataModule(basic_transform=test_transformer),
     base_mlp
 )
 #%%
 simple_mlp.train_model("overfitting_test","base_mlp", batchsize_train_data=4,cross_validation=False, num_epochs=1,test_model=True,lr=0.001,num_workers=0)
+# %%

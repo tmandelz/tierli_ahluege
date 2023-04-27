@@ -66,7 +66,7 @@ class DataModule(pl.LightningDataModule):
     def __init__(
         self,
         basic_transform: transforms,
-        train_features_path: str = "./megadetector/megadetector_all_bbox_transformed.csv",
+        train_features_path: str = "./competition_data/trainfeatures_megadet_bbox_split.csv",
         train_labels_path: str = "./competition_data/train_labels_with_split.csv",
         test_features_path: str = "./competition_data/test_features.csv",
         include_megadetector_train: bool =False,
@@ -111,7 +111,7 @@ class DataModule(pl.LightningDataModule):
         # self.test = ImagesDataset(
         #     test_features, self.exclude_augmentation_transformer,include_megadetector_test)
         self.test = ImagesDataset(
-            test_features, self.exclude_augmentation_transformer,False)
+            test_features, self.exclude_augmentation_transformer)
 
     def prepare_data(self,
                      fold_number) -> None:
