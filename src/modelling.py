@@ -193,12 +193,13 @@ class CCV1_Trainer:
         # new model instance for a new k-fold
         self.model_fold5 = model
 
-    def predict(self, model: nn.Module, data_loader: DataLoader):
+    def predict(self, model: nn.Module, data_loader: DataLoader, last_activation:bool = False):
         """
         Jan
         Prediction for a given model and dataset
         :param nn.Module model: pytorch deep learning module
         :param DataLoader data_loader: data for a prediction
+        :param bool last_activation: if True makes a last activation, defaults False
 
         :return: predictions and true labels
         :rtype: np.array, np.array
@@ -213,7 +214,8 @@ class CCV1_Trainer:
                 data_inputs = batch["image"].to(self.device)
 
                 preds = model(data_inputs)
-                preds = torch.softmax(preds,dim=1)
+                if last_activation:
+                    preds = torch.softmax(preds,dim=1)
                 predictions = np.concatenate(
                     (predictions, preds.data.cpu().numpy()), axis=0
                 )
@@ -243,7 +245,7 @@ class CCV1_Trainer:
         :param str submit_name: name of the file
         """
         # prediction off the test set
-        prediction_test, _ = self.predict(self.model_fold5, self.test_loader)
+        prediction_test, _ = self.predict(self.model_fold5, self.test_loader,True)
         results_df = pd.DataFrame(
             prediction_test, columns=self.evaluation.classes)
         submit_df = pd.concat(
