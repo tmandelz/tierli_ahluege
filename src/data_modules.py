@@ -111,7 +111,7 @@ class DataModule(pl.LightningDataModule):
         # self.test = ImagesDataset(
         #     test_features, self.exclude_augmentation_transformer,include_megadetector_test)
         self.test = ImagesDataset(
-            test_features, self.exclude_augmentation_transformer,False)
+            test_features, self.exclude_augmentation_transformer)
 
     def prepare_data(self,
                      fold_number) -> None:
