@@ -213,7 +213,7 @@ class CCV1_Trainer:
                 data_inputs = batch["image"].to(self.device)
 
                 preds = model(data_inputs)
-                preds = torch.sigmoid(preds)
+                preds = torch.softmax(preds,dim=1)
                 predictions = np.concatenate(
                     (predictions, preds.data.cpu().numpy()), axis=0
                 )
