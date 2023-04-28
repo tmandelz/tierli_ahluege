@@ -44,6 +44,7 @@ def convnext_tiny_():
     model.classifier[2] =nn.Linear(in_features=768, out_features=8, bias=True)
     return model
 
+
 #%%
 model_name = "convnext_tiny"
 pretrained_model = "convnext"
@@ -53,7 +54,7 @@ convnext_transformer = CCV1Transformer(
 
 # %%
 convnext = CCV1_Trainer(DataModule(convnext_transformer), convnext_tiny_,)
-convnext.train_model(model_name, pretrained_model, num_epochs=5, cross_validation=False,test_model=False,batchsize_train_data=128,lr = 3e-4)
+convnext.train_model(model_name, pretrained_model, num_epochs=1, cross_validation=False,test_model=False,batchsize_train_data=128,lr = 3e-4,num_workers=0,decrease_security_validation=1.5)
 
 # %%
 convnext.submission(model_name)
@@ -84,7 +85,15 @@ convnext.train_model(model_name, pretrained_model, num_epochs=5, cross_validatio
 model_name = "convnext_tiny_megadetector"
 convnext = CCV1_Trainer(DataModule(convnext_transformer,delete_unrecognized_mega=True,include_megadetector_train=True,include_megadetector_test=True), convnext_tiny_,)
 convnext.train_model(model_name, pretrained_model, num_epochs=5, cross_validation=True,test_model=False,batchsize_train_data=128,lr = 3e-4,num_workers=0)
+# %%
+convnext.submission(model_name)
 
+# %%
+model_name = "convnext_tiny_exclude_megadetector"
+convnext = CCV1_Trainer(DataModule(convnext_transformer,delete_recognized_mega=True), convnext_tiny_,)
+convnext.train_model(model_name, pretrained_model, num_epochs=3, cross_validation=True,test_model=False,batchsize_train_data=128,lr = 3e-4,num_workers=0)
+# %%
+convnext.submission(model_name)
 
 # %%
 model_name = "convnext_tiny_megadetector_only_crop"
@@ -109,6 +118,8 @@ convnext.train_model(model_name, pretrained_model, num_epochs=5, cross_validatio
 
 # %%
 convnext.submission(model_name)
+# %%
+convnext._save_model("convnext_tiny_")
 
 #%%
 def convnext_small_():
