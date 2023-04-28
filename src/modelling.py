@@ -82,7 +82,8 @@ class CCV1_Trainer:
                 "Threshhold Megadetector":  self.data_model.threshhold_megadetector,
                 "Run without Megadetector":self.data_model.delete_recognized_mega,
                 "Run only with Megadetector": self.data_model.delete_unrecognized_mega,
-                "Decrease Security in Validation":decrease_security_validation
+                "Decrease Security in Validation":decrease_security_validation,
+                "transformer": self.data_model.basic_transform
             }
         )
     def train_model(
