@@ -54,7 +54,7 @@ class CCV1_Trainer:
         self.device = device
         self.evaluation = Evaluation()
 
-    def setup_wandb_run(self, project_name: str, run_group: str, fold: int, lr: float, num_epochs: int, model_architecture: str):
+    def setup_wandb_run(self, project_name: str, run_group: str, fold: int, lr: float, num_epochs: int, model_architecture: str,decrease_security_validation:float):
         """
         Thomas
         Sets a new run up (used for k-fold)
@@ -64,6 +64,7 @@ class CCV1_Trainer:
         :param int lr: learning rate of the model
         :param int num_epochs: number of epochs to train
         :param str model_architecture: Modeltype (architectur) of the model
+        :param int decrease_security_validation: devide the output bevor calculating the softmax
         """
         # init wandb
         self.run = wandb.init(
@@ -76,9 +77,14 @@ class CCV1_Trainer:
                 "learning rate": lr,
                 "epochs": num_epochs,
                 "model architecture": model_architecture,
+                "Megadetector Testdata":self.data_model.include_megadetector_test,
+                "Megadetector Traindata":self.data_model.include_megadetector_train,
+                "Threshhold Megadetector":  self.data_model.threshhold_megadetector,
+                "Run without Megadetector":self.data_model.delete_recognized_mega,
+                "Run only with Megadetector": self.data_model.delete_unrecognized_mega,
+                "Decrease Security in Validation":decrease_security_validation
             }
         )
-
     def train_model(
         self,
         run_group: str,
@@ -91,7 +97,7 @@ class CCV1_Trainer:
         batchsize_train_data: int = 64,
         num_workers: int = 16,
         lr: float = 1e-3,
-        decrease_security_validation:int=1
+        decrease_security_validation:float=1.0
     ) -> None:
         """
         Jan
@@ -120,7 +126,7 @@ class CCV1_Trainer:
 
             # setup a new wandb run for the fold -> fold runs are grouped by name
             self.setup_wandb_run(project_name, run_group,
-                                 fold, lr, num_epochs, model_architecture)
+                                 fold, lr, num_epochs, model_architecture,decrease_security_validation)
 
             # prepare the kfold and dataloaders
             self.data_model.prepare_data(fold)
@@ -196,7 +202,7 @@ class CCV1_Trainer:
         # new model instance for a new k-fold
         self.model_fold5 = model
 
-    def predict(self, model: nn.Module, data_loader: DataLoader, last_activation:bool = False,decrease_security:int=1):
+    def predict(self, model: nn.Module, data_loader: DataLoader, last_activation:bool = False,decrease_security:float=1.0):
         """
         Jan
         Prediction for a given model and dataset
@@ -233,7 +239,7 @@ class CCV1_Trainer:
         model.train()
         return predictions, true_labels
 
-    def submission(self, submit_name: str,decrease_security:int=1):
+    def submission(self, submit_name: str,decrease_security:float=1.0):
         """
         Thomas 
         Makes a submission file and saves the models state
@@ -243,7 +249,7 @@ class CCV1_Trainer:
         self._save_model(submit_name=submit_name)
         self._submit_file(submit_name=submit_name,decrease_security=decrease_security)
 
-    def _submit_file(self, submit_name: str,decrease_security:int=1):
+    def _submit_file(self, submit_name: str,decrease_security:float=1.0):
         """
         Jan
         Creates the file for the submission
