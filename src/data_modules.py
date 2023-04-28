@@ -106,8 +106,7 @@ class DataModule(pl.LightningDataModule):
         if self.include_megadetector_test and self.delete_unrecognized_mega:
            test_features = test_features[test_features["conf"]>self.threshhold_megadetector]
         if self.delete_recognized_mega:
-            test_features = test_features[test_features["conf"]<=self.threshhold_megadetector]
-    
+            test_features = test_features[(test_features["conf"]>self.threshhold_megadetector)==False]
 
         # prepare transforms
         self.basic_transform = basic_transform
@@ -142,10 +141,10 @@ class DataModule(pl.LightningDataModule):
             train_features = train_features[train_features["conf"]>self.threshhold_megadetector]
 
         if self.delete_recognized_mega:
-            val_labels = val_labels[val_features["conf"]<=self.threshhold_megadetector]
-            val_features = val_features[val_features["conf"]<=self.threshhold_megadetector]
-            train_labels = train_labels[train_features["conf"]<=self.threshhold_megadetector]
-            train_features = train_features[train_features["conf"]<=self.threshhold_megadetector]
+            val_labels = val_labels[(val_features["conf"]>self.threshhold_megadetector)==False]
+            val_features = val_features[(val_features["conf"]>self.threshhold_megadetector)==False]
+            train_labels = train_labels[(train_features["conf"]>self.threshhold_megadetector)==False]
+            train_features = train_features[(train_features["conf"]>self.threshhold_megadetector)==False]
         
 
         self.train = ImagesDataset(
