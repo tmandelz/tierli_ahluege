@@ -90,7 +90,8 @@ class CCV1_Trainer:
         project_name: str = "ccv1",
         batchsize_train_data: int = 64,
         num_workers: int = 16,
-        lr: float = 1e-3
+        lr: float = 1e-3,
+        decrease_security_validation:int=1
     ) -> None:
         """
         Jan
@@ -105,6 +106,8 @@ class CCV1_Trainer:
         :param int batchsize: batchsize of the training data
         :param int num_workers: number of workers for the data loader (optimize if GPU usage not optimal) -> default 16
         :param int lr: learning rate of the model
+        :param int decrease_security_validation: devide the output bevor calculating the softmax
+        
         """
 
         # train loop over folds
@@ -173,7 +176,7 @@ class CCV1_Trainer:
                     batch_iter += 1
 
                 # wandb per epoch
-                pred_val, label_val = self.predict(model, self.val_loader)
+                pred_val, label_val = self.predict(model, self.val_loader,decrease_security=decrease_security_validation)
                 loss_val = loss_module(torch.tensor(
                     pred_val), torch.tensor(label_val))
                 self.evaluation.per_epoch(
@@ -193,13 +196,14 @@ class CCV1_Trainer:
         # new model instance for a new k-fold
         self.model_fold5 = model
 
-    def predict(self, model: nn.Module, data_loader: DataLoader, last_activation:bool = False):
+    def predict(self, model: nn.Module, data_loader: DataLoader, last_activation:bool = False,decrease_security:int=1):
         """
         Jan
         Prediction for a given model and dataset
         :param nn.Module model: pytorch deep learning module
         :param DataLoader data_loader: data for a prediction
         :param bool last_activation: if True makes a last activation, defaults False
+        :param int decrease_security: devide the output bevor calculating the softmax
 
         :return: predictions and true labels
         :rtype: np.array, np.array
@@ -213,7 +217,7 @@ class CCV1_Trainer:
                 # Determine prediction of model
                 data_inputs = batch["image"].to(self.device)
 
-                preds = model(data_inputs)
+                preds = model(data_inputs)/decrease_security
                 if last_activation:
                     preds = torch.softmax(preds,dim=1)
                 predictions = np.concatenate(
@@ -229,23 +233,25 @@ class CCV1_Trainer:
         model.train()
         return predictions, true_labels
 
-    def submission(self, submit_name: str):
+    def submission(self, submit_name: str,decrease_security:int=1):
         """
         Thomas 
         Makes a submission file and saves the models state
         :param str submit_name: name of the file
+        :param int decrease_security: devide the output bevor calculating the softmax
         """
         self._save_model(submit_name=submit_name)
-        self._submit_file(submit_name=submit_name)
+        self._submit_file(submit_name=submit_name,decrease_security=decrease_security)
 
-    def _submit_file(self, submit_name: str):
+    def _submit_file(self, submit_name: str,decrease_security:int=1):
         """
         Jan
         Creates the file for the submission
         :param str submit_name: name of the file
+        :param int decrease_security: devide the output bevor calculating the softmax
         """
         # prediction off the test set
-        prediction_test, _ = self.predict(self.model_fold5, self.test_loader,True)
+        prediction_test, _ = self.predict(self.model_fold5, self.test_loader,True,decrease_security)
         results_df = pd.DataFrame(
             prediction_test, columns=self.evaluation.classes)
         submit_df = pd.concat(
