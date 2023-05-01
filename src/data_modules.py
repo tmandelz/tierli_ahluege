@@ -39,7 +39,6 @@ class ImagesDataset(Dataset):
         :rtype: dic
 
         """
-        # TODO
         path = r"./competition_data/" + self.data.iloc[index]["filepath"]
         image = Image.open(path).convert("RGB")
         if self.include_megadetector and self.data.iloc[index]["conf"] > self.threshhold_megadetector:
