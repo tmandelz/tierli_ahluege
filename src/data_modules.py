@@ -39,11 +39,10 @@ class ImagesDataset(Dataset):
         :rtype: dic
 
         """
-        # TODO
         path = r"./competition_data/" + self.data.iloc[index]["filepath"]
         image = Image.open(path).convert("RGB")
         if self.include_megadetector and self.data.iloc[index]["conf"] > self.threshhold_megadetector:
-            y,x,height,width = ast.literal_eval(self.data.iloc[index]["bbox_transformed"])
+            y,x,height,width = ast.literal_eval(self.data.iloc[index]["bbox"])
             image_tensor = transforms.ToTensor()(image)
             image = transforms.ToPILImage()(transforms.functional.crop(image_tensor,y,x,height,width))
         image = self.transform(image)
@@ -68,11 +67,12 @@ class DataModule(pl.LightningDataModule):
         basic_transform: transforms,
         train_features_path: str = "./competition_data/trainfeatures_megadet_bbox_split.csv",
         train_labels_path: str = "./competition_data/train_labels_with_split.csv",
-        test_features_path: str = "./competition_data/test_features.csv",
+        test_features_path: str = "./competition_data/testfeatures_megadet_bbox.csv",
         include_megadetector_train: bool =False,
         include_megadetector_test: bool = False,
         threshhold_megadetector:float=0.5,
-        delete_unrecognized_mega=False
+        delete_unrecognized_mega=False,
+        delete_recognized_mega=False
     ):
         """
         Jan
@@ -84,20 +84,28 @@ class DataModule(pl.LightningDataModule):
         :param bool include_megadetector_test: add a megadetector transformation for testing
         :param float threshhold_megadetector: threshhold for box if the megadetector is activated
         :param delete_unrecognized_mega: delete image where the megadetector don't recognize images
+        :param delete_recognized_mega: delete image where the megadetector recognize images
         """
+        # load_data
+        self.train_features = pd.read_csv(train_features_path, index_col="id")
+        self.train_labels = pd.read_csv(train_labels_path, index_col="id")
+        test_features = pd.read_csv(test_features_path, index_col="id")
+        
         # activation for megadetector
         self.include_megadetector_train = include_megadetector_train
         self.include_megadetector_test = include_megadetector_test
         self.threshhold_megadetector = threshhold_megadetector
         self.delete_unrecognized_mega = delete_unrecognized_mega
-        # load_data
-        self.train_features = pd.read_csv(train_features_path, index_col="id")
-        self.train_labels = pd.read_csv(train_labels_path, index_col="id")
-        test_features = pd.read_csv(test_features_path, index_col="id")
+        self.delete_recognized_mega = delete_recognized_mega
 
-        # TODO when file ready
-        #if self.include_megadetector_test and self.delete_unrecognized_mega:
-        #    test_features = test_features[test_features["conf"]>self.threshhold_megadetector]
+        if delete_recognized_mega and delete_unrecognized_mega:
+            print("You deleted all the Data")
+            raise ValueError
+
+        if self.include_megadetector_test and self.delete_unrecognized_mega:
+           test_features = test_features[test_features["conf"]>self.threshhold_megadetector]
+        if self.delete_recognized_mega:
+            test_features = test_features[(test_features["conf"]>self.threshhold_megadetector)==False]
 
         # prepare transforms
         self.basic_transform = basic_transform
@@ -107,11 +115,10 @@ class DataModule(pl.LightningDataModule):
             basic_transform.transforms[:1] + basic_transform.transforms[1 + 1:])
 
         # exclude data augmentation compose
-        # TODO when file ready
-        # self.test = ImagesDataset(
-        #     test_features, self.exclude_augmentation_transformer,include_megadetector_test)
+        
         self.test = ImagesDataset(
-            test_features, self.exclude_augmentation_transformer)
+            test_features, self.exclude_augmentation_transformer,include_megadetector = include_megadetector_test,threshhold_megadetector=threshhold_megadetector)
+        
 
     def prepare_data(self,
                      fold_number) -> None:
@@ -128,16 +135,21 @@ class DataModule(pl.LightningDataModule):
         if self.include_megadetector_test and self.delete_unrecognized_mega:
             val_labels = val_labels[val_features["conf"]>self.threshhold_megadetector]
             val_features = val_features[val_features["conf"]>self.threshhold_megadetector]
-
         if self.include_megadetector_train and self.delete_unrecognized_mega:
             train_labels = train_labels[train_features["conf"]>self.threshhold_megadetector]
             train_features = train_features[train_features["conf"]>self.threshhold_megadetector]
+
+        if self.delete_recognized_mega:
+            val_labels = val_labels[(val_features["conf"]>self.threshhold_megadetector)==False]
+            val_features = val_features[(val_features["conf"]>self.threshhold_megadetector)==False]
+            train_labels = train_labels[(train_features["conf"]>self.threshhold_megadetector)==False]
+            train_features = train_features[(train_features["conf"]>self.threshhold_megadetector)==False]
         
 
         self.train = ImagesDataset(
-            train_features, self.basic_transform, train_labels,self.include_megadetector_train)
+            train_features, self.basic_transform, train_labels,self.include_megadetector_train,self.threshhold_megadetector)
         self.val = ImagesDataset(
-            val_features, self.exclude_augmentation_transformer, val_labels,self.include_megadetector_test)
+            val_features, self.exclude_augmentation_transformer, val_labels,self.include_megadetector_test,self.threshhold_megadetector)
 
     def train_dataloader(self, batch_size: int = 128, num_workers: int = 16):
         """
