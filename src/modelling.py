@@ -98,7 +98,7 @@ class CCV1_Trainer:
         batchsize_train_data: int = 64,
         num_workers: int = 16,
         lr: float = 1e-3,
-        decrease_security_validation:float=1.0
+        decrease_security_validation:float=1.0,
     ) -> None:
         """
         Jan
@@ -113,16 +113,14 @@ class CCV1_Trainer:
         :param int batchsize: batchsize of the training data
         :param int num_workers: number of workers for the data loader (optimize if GPU usage not optimal) -> default 16
         :param int lr: learning rate of the model
-        :param int decrease_security_validation: devide the output bevor calculating the softmax
-        
+        :param int decrease_security_validation: devide the output bevor calculating the softmax        
         """
-
         # train loop over folds
         if cross_validation:
             n_folds = 5
         else:
             n_folds = 1
-
+        self.models=[]
         for fold in tqdm(range(n_folds), unit="fold", desc="Fold-Iteration"):
 
             # setup a new wandb run for the fold -> fold runs are grouped by name
@@ -199,17 +197,18 @@ class CCV1_Trainer:
             # wandb per model
             self.evaluation.per_model(
                 label_val, pred_val, self.data_model.val.data)
+
+            self.models.append(model)
             self.run.finish()
         # new model instance for a new k-fold
         self.model_fold5 = model
 
-    def predict(self, model: nn.Module, data_loader: DataLoader, last_activation:bool = False,decrease_security:float=1.0):
+    def predict(self, model: nn.Module, data_loader: DataLoader,decrease_security:float=1.0):
         """
         Jan
         Prediction for a given model and dataset
         :param nn.Module model: pytorch deep learning module
         :param DataLoader data_loader: data for a prediction
-        :param bool last_activation: if True makes a last activation, defaults False
         :param int decrease_security: devide the output bevor calculating the softmax
 
         :return: predictions and true labels
@@ -225,8 +224,6 @@ class CCV1_Trainer:
                 data_inputs = batch["image"].to(self.device)
 
                 preds = model(data_inputs)/decrease_security
-                if last_activation:
-                    preds = torch.softmax(preds,dim=1)
                 predictions = np.concatenate(
                     (predictions, preds.data.cpu().numpy()), axis=0
                 )
@@ -240,25 +237,35 @@ class CCV1_Trainer:
         model.train()
         return predictions, true_labels
 
-    def submission(self, submit_name: str,decrease_security:float=1.0):
+    def submission(self, submit_name: str,decrease_security:float=1.0,ensemble:bool=False):
         """
         Thomas 
         Makes a submission file and saves the models state
         :param str submit_name: name of the file
         :param int decrease_security: devide the output bevor calculating the softmax
+        :param bool ensemble: save models for ensemble model
         """
         self._save_model(submit_name=submit_name)
-        self._submit_file(submit_name=submit_name,decrease_security=decrease_security)
+        self._submit_file(submit_name=submit_name,decrease_security=decrease_security,ensemble=ensemble)
 
-    def _submit_file(self, submit_name: str,decrease_security:float=1.0):
+    def _submit_file(self, submit_name: str,decrease_security:float=1.0,ensemble:bool=False):
         """
         Jan
         Creates the file for the submission
         :param str submit_name: name of the file
         :param int decrease_security: devide the output bevor calculating the softmax
+        :param bool ensemble: save models for ensemble model
         """
         # prediction off the test set
-        prediction_test, _ = self.predict(self.model_fold5, self.test_loader,True,decrease_security)
+        if ensemble:
+            combined_result =np.array([])
+            for model in self.model:
+                prediction_test, _ = self.predict(model, self.test_loader,decrease_security)
+                combined_result += prediction_test
+            combined_result /=5
+        else:
+            prediction_test, _ = self.predict(self.model_fold5, self.test_loader,decrease_security)
+        preds = torch.softmax(preds,dim=1)
         results_df = pd.DataFrame(
             prediction_test, columns=self.evaluation.classes)
         submit_df = pd.concat(
