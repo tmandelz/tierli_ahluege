@@ -258,10 +258,10 @@ class CCV1_Trainer:
         """
         # prediction off the test set
         if ensemble:
-            combined_result =np.array([])
-            for model in self.model:
-                prediction_test, _ = self.predict(model, self.test_loader,decrease_security)
-                combined_result += prediction_test
+            combined_result = 0
+            for model in self.models:
+                prediction_test, _ = self.predict(model, self.test_loader,decrease_security=decrease_security)
+                combined_result = np.add(prediction_test,combined_result)
             combined_result /=5
         else:
             prediction_test, _ = self.predict(self.model_fold5, self.test_loader,decrease_security)
@@ -285,5 +285,4 @@ class CCV1_Trainer:
         torch.save(self.model_fold5.state_dict(),
                    path)
         print(f"Saved model: {submit_name} to {path}")
-
 # %%
