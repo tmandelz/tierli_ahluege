@@ -26,13 +26,13 @@ class Evaluation:
         """
         self.classes = data_classes
 
-    def per_batch(self, index_batch: int, epoch: int, loss_batch: float) -> None:
+    def per_batch(self, index_batch: int, epoch: int, loss_batch: float,loss_val:float = None) -> None:
         """
         Thomas
         Logs the loss of a batch
         """
         wandb.log({"index_batch": index_batch,
-                  "epoch": epoch, "loss batch": loss_batch})
+                  "epoch": epoch, "loss batch": loss_batch,"loss batch val":loss_val})
 
     def per_epoch(
         self,

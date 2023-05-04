@@ -98,7 +98,8 @@ class CCV1_Trainer:
         batchsize_train_data: int = 64,
         num_workers: int = 16,
         lr: float = 1e-3,
-        decrease_confidence_validation:float=1.0
+        decrease_confidence_validation:float=1.0,
+        validate_batch_loss_each:int=20,
     ) -> None:
         """
         Jan
@@ -113,7 +114,8 @@ class CCV1_Trainer:
         :param int batchsize: batchsize of the training data
         :param int num_workers: number of workers for the data loader (optimize if GPU usage not optimal) -> default 16
         :param int lr: learning rate of the model
-        :param int decrease_confidence_validation: divide the output bevor calculating the softmax
+        :param float decrease_confidence_validation: divide the output bevor calculating the softmax
+        :param int validate_batch_loss_each: defines when to log validation loss on the batch
         
         """
         # train loop over folds
@@ -166,6 +168,11 @@ class CCV1_Trainer:
                     loss.backward()
                     optimizer.step()
 
+                    if batch_iter % validate_batch_loss_each == 0:
+                        pred_val, label_val = self.predict(model, self.val_loader, decrease_confidence=decrease_confidence_validation)
+                        loss_val = loss_module(torch.tensor(pred_val), torch.tensor(label_val))
+                        self.evaluation.per_batch(batch_iter, epoch, loss,loss_val)
+                    
                     self.evaluation.per_batch(batch_iter, epoch, loss)
 
                     # data for evaluation
@@ -182,7 +189,7 @@ class CCV1_Trainer:
                     batch_iter += 1
 
                 # wandb per epoch
-                pred_val, label_val = self.predict(model, self.val_loader,decrease_security=decrease_confidence_validation)
+                pred_val, label_val = self.predict(model, self.val_loader,decrease_confidence=decrease_confidence_validation)
                 loss_val = loss_module(torch.tensor(
                     pred_val), torch.tensor(label_val))
                 self.evaluation.per_epoch(
@@ -204,7 +211,7 @@ class CCV1_Trainer:
         # new model instance for a new k-fold
         self.model_fold5 = model
 
-    def predict(self, model: nn.Module, data_loader: DataLoader,decrease_security:float=1.0):
+    def predict(self, model: nn.Module, data_loader: DataLoader,decrease_confidence:float=1.0):
         """
         Jan
         Prediction for a given model and dataset
@@ -224,7 +231,7 @@ class CCV1_Trainer:
                 # Determine prediction of model
                 data_inputs = batch["image"].to(self.device)
 
-                preds = model(data_inputs)/decrease_security
+                preds = model(data_inputs)/decrease_confidence
                 predictions = np.concatenate(
                     (predictions, preds.data.cpu().numpy()), axis=0
                 )
@@ -261,7 +268,7 @@ class CCV1_Trainer:
         if ensemble:
             combined_result = 0
             for model in self.models:
-                prediction_test, _ = self.predict(model, self.test_loader,decrease_security=decrease_security)
+                prediction_test, _ = self.predict(model, self.test_loader,decrease_confidence=decrease_security)
                 combined_result = np.add(prediction_test,combined_result)
             combined_result /=5
         else:
