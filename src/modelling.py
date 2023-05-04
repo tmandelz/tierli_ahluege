@@ -98,7 +98,7 @@ class CCV1_Trainer:
         batchsize_train_data: int = 64,
         num_workers: int = 16,
         lr: float = 1e-3,
-        decrease_security_validation:float=1.0,
+        decrease_confidence_validation:float=1.0
     ) -> None:
         """
         Jan
@@ -113,7 +113,8 @@ class CCV1_Trainer:
         :param int batchsize: batchsize of the training data
         :param int num_workers: number of workers for the data loader (optimize if GPU usage not optimal) -> default 16
         :param int lr: learning rate of the model
-        :param int decrease_security_validation: devide the output bevor calculating the softmax        
+        :param int decrease_confidence_validation: divide the output bevor calculating the softmax
+        
         """
         # train loop over folds
         if cross_validation:
@@ -125,7 +126,7 @@ class CCV1_Trainer:
 
             # setup a new wandb run for the fold -> fold runs are grouped by name
             self.setup_wandb_run(project_name, run_group,
-                                 fold, lr, num_epochs, model_architecture,decrease_security_validation)
+                                 fold, lr, num_epochs, model_architecture,decrease_confidence_validation)
 
             # prepare the kfold and dataloaders
             self.data_model.prepare_data(fold)
@@ -181,7 +182,7 @@ class CCV1_Trainer:
                     batch_iter += 1
 
                 # wandb per epoch
-                pred_val, label_val = self.predict(model, self.val_loader,decrease_security=decrease_security_validation)
+                pred_val, label_val = self.predict(model, self.val_loader,decrease_security=decrease_confidence_validation)
                 loss_val = loss_module(torch.tensor(
                     pred_val), torch.tensor(label_val))
                 self.evaluation.per_epoch(
