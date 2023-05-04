@@ -97,6 +97,26 @@ class CCV1Transformer:
                     transforms.Normalize(
                         mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)),
                 ])
+        elif pretrained_transformer == "swin":
+            self.pretrained_transformer = transforms.Compose(
+                [
+                    transforms.Resize(
+                        (232, 232), antialias=True, interpolation=transforms.InterpolationMode.BICUBIC
+                    ),
+                    transforms.CenterCrop(224),
+                    transforms.Normalize(
+                        mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)),
+                ])
+        elif pretrained_transformer == "inceptionv3":
+            self.pretrained_transformer = transforms.Compose(
+                [
+                    transforms.Resize(
+                        (342, 342), antialias=True, interpolation=transforms.InterpolationMode.BILINEAR
+                    ),
+                    transforms.CenterCrop(299),
+                    transforms.Normalize(
+                        mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)),
+                ])
 
     def getCompose(self, turn_off_to_tensor: bool = False):
         """
