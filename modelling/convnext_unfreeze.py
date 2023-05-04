@@ -70,24 +70,23 @@ convnext.train_model(model_name, pretrained_model, num_epochs=5, cross_validatio
 # %%
 
 convnext_transformer = CCV1Transformer(
-    transforms.Compose([transforms.RandomHorizontalFlip()]), "model_specific", pretrained_model
+    transforms.Compose([None_Transform()]), "model_specific", pretrained_model
 ).getCompose(True)
-def convnext_tiny_unfreeze_less():
-    model = models.convnext_tiny(weights=True)
+def convnext_base_unfreeze_less():
+    model = models.convnext_base(weights=True)
     # Disable gradients on all model parameters to freeze the weights
     n = len(list(model.parameters()))
     for param in model.parameters():
         n-=1
-        if n < 37:
+        if n < 5 + 2 * 8:
             break
         param.requires_grad = False
     model.classifier[2] =nn.Sequential(
-    nn.Dropout(0.5),
-    nn.Linear(in_features=768, out_features=8, bias=True))
+    nn.Linear(in_features=1024, out_features=8, bias=True))
     return model
 
 # %%
-model_name = "convnext_tiny_freeze_less6_aug"
-convnext = CCV1_Trainer(DataModule(convnext_transformer), convnext_tiny_unfreeze_less,)
-convnext.train_model(model_name, pretrained_model, num_epochs=3, cross_validation=True, test_model=False, batchsize_train_data=128, lr = 3e-4,num_workers=0)
+model_name = "convnext_base_freeze_less2"
+convnext = CCV1_Trainer(DataModule(convnext_transformer), convnext_base_unfreeze_less,)
+convnext.train_model(model_name, pretrained_model, num_epochs=3, cross_validation=True, test_model=False, batchsize_train_data=128, lr = 4e-4,num_workers=0)
 # %%
