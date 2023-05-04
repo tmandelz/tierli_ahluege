@@ -28,8 +28,7 @@ def set_seed(seed: int = 42):
 
 
 # %%
-device = torch.device(
-    "cuda") if torch.cuda.is_available() else torch.device("cpu")
+device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 
 
 class CCV1_Trainer:
@@ -38,7 +37,6 @@ class CCV1_Trainer:
         data_model: DataModule,
         model: nn.Module,
         device: torch.device = device,
-
     ) -> None:
         """
         Jan
@@ -54,7 +52,16 @@ class CCV1_Trainer:
         self.device = device
         self.evaluation = Evaluation()
 
-    def setup_wandb_run(self, project_name: str, run_group: str, fold: int, lr: float, num_epochs: int, model_architecture: str,decrease_security_validation:float):
+    def setup_wandb_run(
+        self,
+        project_name: str,
+        run_group: str,
+        fold: int,
+        lr: float,
+        num_epochs: int,
+        model_architecture: str,
+        decrease_security_validation: float,
+    ):
         """
         Thomas
         Sets a new run up (used for k-fold)
@@ -77,15 +84,16 @@ class CCV1_Trainer:
                 "learning rate": lr,
                 "epochs": num_epochs,
                 "model architecture": model_architecture,
-                "Megadetector Testdata":self.data_model.include_megadetector_test,
-                "Megadetector Traindata":self.data_model.include_megadetector_train,
-                "Threshhold Megadetector":  self.data_model.threshhold_megadetector,
-                "Run without Megadetector":self.data_model.delete_recognized_mega,
+                "Megadetector Testdata": self.data_model.include_megadetector_test,
+                "Megadetector Traindata": self.data_model.include_megadetector_train,
+                "Threshhold Megadetector": self.data_model.threshhold_megadetector,
+                "Run without Megadetector": self.data_model.delete_recognized_mega,
                 "Run only with Megadetector": self.data_model.delete_unrecognized_mega,
-                "Decrease Security in Validation":decrease_security_validation,
-                "transformer": self.data_model.basic_transform
-            }
+                "Decrease Security in Validation": decrease_security_validation,
+                "transformer": self.data_model.basic_transform,
+            },
         )
+
     def train_model(
         self,
         run_group: str,
@@ -98,8 +106,8 @@ class CCV1_Trainer:
         batchsize_train_data: int = 64,
         num_workers: int = 16,
         lr: float = 1e-3,
-        decrease_confidence_validation:float=1.0,
-        validate_batch_loss_each:int=20,
+        decrease_confidence_validation: float = 1.0,
+        validate_batch_loss_each: int = 20,
     ) -> None:
         """
         Jan
@@ -116,24 +124,31 @@ class CCV1_Trainer:
         :param int lr: learning rate of the model
         :param float decrease_confidence_validation: divide the output bevor calculating the softmax
         :param int validate_batch_loss_each: defines when to log validation loss on the batch
-        
+
         """
         # train loop over folds
         if cross_validation:
             n_folds = 5
         else:
             n_folds = 1
-        self.models=[]
+        self.models = []
         for fold in tqdm(range(n_folds), unit="fold", desc="Fold-Iteration"):
-
             # setup a new wandb run for the fold -> fold runs are grouped by name
-            self.setup_wandb_run(project_name, run_group,
-                                 fold, lr, num_epochs, model_architecture,decrease_confidence_validation)
+            self.setup_wandb_run(
+                project_name,
+                run_group,
+                fold,
+                lr,
+                num_epochs,
+                model_architecture,
+                decrease_confidence_validation,
+            )
 
             # prepare the kfold and dataloaders
             self.data_model.prepare_data(fold)
             self.train_loader = self.data_model.train_dataloader(
-                batchsize_train_data, num_workers)
+                batchsize_train_data, num_workers
+            )
             self.val_loader = self.data_model.val_dataloader()
 
             # Overfitting Test for first batch
@@ -168,12 +183,18 @@ class CCV1_Trainer:
                     loss.backward()
                     optimizer.step()
 
+                    loss_val_batch = None
                     if batch_iter % validate_batch_loss_each == 0:
-                        pred_val, label_val = self.predict(model, self.val_loader, decrease_confidence=decrease_confidence_validation)
-                        loss_val = loss_module(torch.tensor(pred_val), torch.tensor(label_val))
-                        self.evaluation.per_batch(batch_iter, epoch, loss,loss_val)
-                    
-                    self.evaluation.per_batch(batch_iter, epoch, loss)
+                        pred_val, label_val = self.predict(
+                            model,
+                            self.val_loader,
+                            decrease_confidence=decrease_confidence_validation,
+                        )
+                        loss_val_batch = loss_module(
+                            torch.tensor(pred_val), torch.tensor(label_val)
+                        )
+
+                    self.evaluation.per_batch(batch_iter, epoch, loss, loss_val_batch)
 
                     # data for evaluation
                     label_train_data = np.concatenate(
@@ -189,9 +210,12 @@ class CCV1_Trainer:
                     batch_iter += 1
 
                 # wandb per epoch
-                pred_val, label_val = self.predict(model, self.val_loader,decrease_confidence=decrease_confidence_validation)
-                loss_val = loss_module(torch.tensor(
-                    pred_val), torch.tensor(label_val))
+                pred_val, label_val = self.predict(
+                    model,
+                    self.val_loader,
+                    decrease_confidence=decrease_confidence_validation,
+                )
+                loss_val = loss_module(torch.tensor(pred_val), torch.tensor(label_val))
                 self.evaluation.per_epoch(
                     epoch,
                     loss_train.mean(),
@@ -203,21 +227,25 @@ class CCV1_Trainer:
                 )
 
             # wandb per model
-            self.evaluation.per_model(
-                label_val, pred_val, self.data_model.val.data)
+            self.evaluation.per_model(label_val, pred_val, self.data_model.val.data)
 
             self.models.append(model)
             self.run.finish()
         # new model instance for a new k-fold
         self.model_fold5 = model
 
-    def predict(self, model: nn.Module, data_loader: DataLoader,decrease_confidence:float=1.0):
+    def predict(
+        self,
+        model: nn.Module,
+        data_loader: DataLoader,
+        decrease_confidence: float = 1.0,
+    ):
         """
         Jan
         Prediction for a given model and dataset
         :param nn.Module model: pytorch deep learning module
         :param DataLoader data_loader: data for a prediction
-        :param int decrease_security: devide the output bevor calculating the softmax
+        :param int decrease_confidence: devide the output bevor calculating the softmax
 
         :return: predictions and true labels
         :rtype: np.array, np.array
@@ -231,13 +259,13 @@ class CCV1_Trainer:
                 # Determine prediction of model
                 data_inputs = batch["image"].to(self.device)
 
-                preds = model(data_inputs)/decrease_confidence
+                preds = model(data_inputs) / decrease_confidence
                 predictions = np.concatenate(
                     (predictions, preds.data.cpu().numpy()), axis=0
                 )
 
                 # checks if labels columns exists -> if not exists test batch
-                if 'label' in batch.keys():
+                if "label" in batch.keys():
                     data_labels = batch["label"].to(self.device)
                     true_labels = np.concatenate(
                         (true_labels, data_labels.data.cpu().numpy()), axis=0
@@ -245,37 +273,48 @@ class CCV1_Trainer:
         model.train()
         return predictions, true_labels
 
-    def submission(self, submit_name: str,decrease_security:float=1.0,ensemble:bool=False):
+    def submission(
+        self, submit_name: str, decrease_confidence: float = 1.0, ensemble: bool = False
+    ):
         """
-        Thomas 
+        Thomas
         Makes a submission file and saves the models state
         :param str submit_name: name of the file
-        :param int decrease_security: devide the output bevor calculating the softmax
+        :param int decrease_confidence: devide the output bevor calculating the softmax
         :param bool ensemble: save models for ensemble model
         """
         self._save_model(submit_name=submit_name)
-        self._submit_file(submit_name=submit_name,decrease_security=decrease_security,ensemble=ensemble)
+        self._submit_file(
+            submit_name=submit_name,
+            decrease_confidence=decrease_confidence,
+            ensemble=ensemble,
+        )
 
-    def _submit_file(self, submit_name: str,decrease_security:float=1.0,ensemble:bool=False):
+    def _submit_file(
+        self, submit_name: str, decrease_confidence: float = 1.0, ensemble: bool = False
+    ):
         """
         Jan
         Creates the file for the submission
         :param str submit_name: name of the file
-        :param int decrease_security: devide the output bevor calculating the softmax
+        :param int decrease_confidence: devide the output bevor calculating the softmax
         :param bool ensemble: save models for ensemble model
         """
         # prediction off the test set
         if ensemble:
             combined_result = 0
             for model in self.models:
-                prediction_test, _ = self.predict(model, self.test_loader,decrease_confidence=decrease_security)
-                combined_result = np.add(prediction_test,combined_result)
-            combined_result /=5
+                prediction_test, _ = self.predict(
+                    model, self.test_loader, decrease_confidence=decrease_confidence
+                )
+                combined_result = np.add(prediction_test, combined_result)
+            combined_result /= 5
         else:
-            prediction_test, _ = self.predict(self.model_fold5, self.test_loader,decrease_security)
-        preds = torch.softmax(preds,dim=1)
-        results_df = pd.DataFrame(
-            prediction_test, columns=self.evaluation.classes)
+            prediction_test, _ = self.predict(
+                self.model_fold5, self.test_loader, decrease_confidence
+            )
+        preds = torch.softmax(preds, dim=1)
+        results_df = pd.DataFrame(prediction_test, columns=self.evaluation.classes)
         submit_df = pd.concat(
             [self.data_model.test.data.reset_index()["id"], results_df], axis=1
         )
@@ -285,12 +324,13 @@ class CCV1_Trainer:
 
     def _save_model(self, submit_name: str):
         """
-        Thomas 
+        Thomas
         saves the models state
         :param str submit_name: name of the model file
         """
         path = f"./model_submit/{submit_name}.pth"
-        torch.save(self.model_fold5.state_dict(),
-                   path)
+        torch.save(self.model_fold5.state_dict(), path)
         print(f"Saved model: {submit_name} to {path}")
+
+
 # %%
