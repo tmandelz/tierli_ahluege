@@ -37,6 +37,7 @@ class CCV1_Trainer:
         data_model: DataModule,
         model: nn.Module,
         device: torch.device = device,
+        random_cv_seeds:list =[42,43,44,45,46]
     ) -> None:
         """
         Jan
@@ -45,7 +46,9 @@ class CCV1_Trainer:
         :param nn.Module model: pytorch deep learning module
         :param torch.device device: used device for training
         """
+        self.random_cv_seeds=random_cv_seeds
         set_seed()
+        
         self.data_model = data_model
         self.test_loader = data_model.test_dataloader()
         self.model = model
@@ -108,6 +111,7 @@ class CCV1_Trainer:
         lr: float = 1e-3,
         decrease_confidence_validation: float = 1.0,
         validate_batch_loss_each: int = 20,
+        cross_validation_random_seeding = False
     ) -> None:
         """
         Jan
@@ -133,6 +137,10 @@ class CCV1_Trainer:
             n_folds = 1
         self.models = []
         for fold in tqdm(range(n_folds), unit="fold", desc="Fold-Iteration"):
+            # set a different random seed for each fold to introduce some variance
+            if cross_validation_random_seeding:
+                set_seed(self.random_cv_seeds[fold])
+            
             # setup a new wandb run for the fold -> fold runs are grouped by name
             self.setup_wandb_run(
                 project_name,
@@ -280,7 +288,7 @@ class CCV1_Trainer:
         Thomas
         Makes a submission file and saves the models state
         :param str submit_name: name of the file
-        :param int decrease_confidence: devide the output bevor calculating the softmax
+        :param int decrease_confidence: divide the output bevor calculating the softmax
         :param bool ensemble: save models for ensemble model
         """
         self._save_model(submit_name=submit_name)
@@ -297,23 +305,24 @@ class CCV1_Trainer:
         Jan
         Creates the file for the submission
         :param str submit_name: name of the file
-        :param int decrease_confidence: devide the output bevor calculating the softmax
+        :param int decrease_confidence: divide the output bevor calculating the softmax
         :param bool ensemble: save models for ensemble model
         """
         # prediction off the test set
+        prediction_test = 0
         if ensemble:
-            combined_result = 0
+            # combined_result = 0
             for model in self.models:
-                prediction_test, _ = self.predict(
+                prediction_test_fold, _ = self.predict(
                     model, self.test_loader, decrease_confidence=decrease_confidence
                 )
-                combined_result = np.add(prediction_test, combined_result)
-            combined_result /= 5
+                prediction_test = np.add(prediction_test_fold, prediction_test)
+            prediction_test /= 5
         else:
             prediction_test, _ = self.predict(
                 self.model_fold5, self.test_loader, decrease_confidence
             )
-        prediction_test = torch.softmax(prediction_test, dim=1)
+        prediction_test = torch.softmax(torch.from_numpy(prediction_test), dim=1)
         results_df = pd.DataFrame(prediction_test, columns=self.evaluation.classes)
         submit_df = pd.concat(
             [self.data_model.test.data.reset_index()["id"], results_df], axis=1
