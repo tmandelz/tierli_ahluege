@@ -46,6 +46,7 @@ class CCV1_Trainer:
         :param DataModule data_model: instance where the 3 dataloader are available.
         :param nn.Module model: pytorch deep learning module
         :param torch.device device: used device for training
+        :param list random_cv_seeds: what random seeds to use
         """
         self.random_cv_seeds = random_cv_seeds
         set_seed()
@@ -129,6 +130,7 @@ class CCV1_Trainer:
         :param int lr: learning rate of the model
         :param float decrease_confidence_validation: divide the output bevor calculating the softmax
         :param int validate_batch_loss_each: defines when to log validation loss on the batch
+        :param bool cross_validation_random_seeding: defines whether to use the same seed for each fold or to use different ones
 
         """
         # train loop over folds
