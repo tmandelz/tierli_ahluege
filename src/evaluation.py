@@ -8,6 +8,9 @@ from strenum import StrEnum
 
 
 class Animal(StrEnum):
+    """
+    Enumeration String for our labels
+    """
     ANTELOPE = "antelope_duiker"
     BIRD = "bird"
     BLANK = "blank"
@@ -26,13 +29,17 @@ class Evaluation:
         """
         self.classes = data_classes
 
-    def per_batch(self, index_batch: int, epoch: int, loss_batch: float,loss_val:float = None) -> None:
+    def per_batch(self, index_batch: int, epoch: int, loss_batch: float, loss_val: float = None) -> None:
         """
         Thomas
         Logs the loss of a batch
+        :param int index_batch: index of the batch to log (step)
+        :param int epoch: index of the epoch to log
+        :param float loss_batch: loss of the batch for the trainset
+        :param float loss_val: loss of the batch for the validationset, is not logged every epoch, defaults to None
         """
         wandb.log({"index_batch": index_batch,
-                  "epoch": epoch, "loss batch": loss_batch,"loss batch val":loss_val})
+                  "epoch": epoch, "loss batch": loss_batch, "loss batch val": loss_val})
 
     def per_epoch(
         self,
@@ -47,6 +54,7 @@ class Evaluation:
         """
         Jan
         wandb log of different scores
+        :param int epoch: index of the epoch to log
         :param float loss_train: log loss of the training
         :param np.array pred_train: prediction of the training
         :param np.array label_train: labels of the training
@@ -115,7 +123,7 @@ class Evaluation:
         wandb.log({"Bad site": plt})
         plt.close()
 
-    def plot_16_animals(self, index: np.array, data: pd.DataFrame):
+    def plot_16_animals(self, index: np.array, data: pd.DataFrame) -> None:
         """
         Jan
         plot 16 animals
