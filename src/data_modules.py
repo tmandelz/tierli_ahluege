@@ -16,7 +16,7 @@ class ImagesDataset(Dataset):
     """
 
     def __init__(
-        self, x_df: pd.DataFrame, transform: transforms, y_df: pd.DataFrame = None, include_megadetector: bool= False,threshhold_megadetector:float =0.5
+        self, x_df: pd.DataFrame, transform: transforms, y_df: pd.DataFrame = None, include_megadetector: bool = False, threshhold_megadetector: float = 0.5
     ):
         """
         :param pd.DataFrame x_df: links of the jpg
@@ -29,23 +29,32 @@ class ImagesDataset(Dataset):
         self.label = y_df
         self.transform = transform
         self.include_megadetector = include_megadetector
-        self.threshhold_megadetector =threshhold_megadetector
+        self.threshhold_megadetector = threshhold_megadetector
 
     def __getitem__(self, index: int) -> dict:
         """
         :param int index: index of the data path
 
         :return: dictionary of id,image,label
-        :rtype: dic
+        :rtype: dict
 
         """
+        # get image from path
         path = r"./competition_data/" + self.data.iloc[index]["filepath"]
         image = Image.open(path).convert("RGB")
+
+        # crop images with bounding boxes of megadetector
         if self.include_megadetector and self.data.iloc[index]["conf"] > self.threshhold_megadetector:
-            y,x,height,width = ast.literal_eval(self.data.iloc[index]["bbox"])
+            # get bounding box by coordinates and shapes
+            y, x, height, width = ast.literal_eval(
+                self.data.iloc[index]["bbox"])
             image_tensor = transforms.ToTensor()(image)
-            image = transforms.ToPILImage()(transforms.functional.crop(image_tensor,y,x,height,width))
+            image = transforms.ToPILImage()(
+                transforms.functional.crop(image_tensor, y, x, height, width))
+
+        # transform the picture
         image = self.transform(image)
+        # get image id from index
         image_id = self.data.index[index]
 
         # if we don't have labels (e.g. for test set) just return the image and image id
@@ -68,13 +77,13 @@ class DataModule(pl.LightningDataModule):
         train_features_path: str = "./competition_data/trainfeatures_megadet_bbox_split.csv",
         train_labels_path: str = "./competition_data/train_labels_with_split.csv",
         test_features_path: str = "./competition_data/testfeatures_megadet_bbox.csv",
-        include_megadetector_train: bool =False,
+        include_megadetector_train: bool = False,
         include_megadetector_test: bool = False,
         threshhold_megadetector:float=0.5,
         max_threshhold_megadetector:float = 1.01,
         delete_unrecognized_mega=False,
         delete_recognized_mega=False
-    ):
+    ) -> None:
         """
         Jan
         :param transforms basic_transform: basic tranformation -> default resize(224,224), ToTensor, standardize
@@ -92,7 +101,7 @@ class DataModule(pl.LightningDataModule):
         self.train_features = pd.read_csv(train_features_path, index_col="id")
         self.train_labels = pd.read_csv(train_labels_path, index_col="id")
         test_features = pd.read_csv(test_features_path, index_col="id")
-        
+
         # activation for megadetector
         self.include_megadetector_train = include_megadetector_train
         self.include_megadetector_test = include_megadetector_test
@@ -110,7 +119,8 @@ class DataModule(pl.LightningDataModule):
            test_features = test_features[(test_features["conf"]>self.max_threshhold_megadetector)==False]
 
         if self.delete_recognized_mega:
-            test_features = test_features[(test_features["conf"]>self.threshhold_megadetector)==False]
+            test_features = test_features[(
+                test_features["conf"] > self.threshhold_megadetector) == False]
 
         # prepare transforms
         self.basic_transform = basic_transform
@@ -120,10 +130,8 @@ class DataModule(pl.LightningDataModule):
             basic_transform.transforms[:1] + basic_transform.transforms[1 + 1:])
 
         # exclude data augmentation compose
-        
         self.test = ImagesDataset(
-            test_features, self.exclude_augmentation_transformer,include_megadetector = include_megadetector_test,threshhold_megadetector=threshhold_megadetector)
-        
+            test_features, self.exclude_augmentation_transformer, include_megadetector=include_megadetector_test, threshhold_megadetector=threshhold_megadetector)
 
     def prepare_data(self,
                      fold_number) -> None:
@@ -151,16 +159,19 @@ class DataModule(pl.LightningDataModule):
             train_features = train_features[(train_features["conf"]>self.max_threshhold_megadetector)==False]
 
         if self.delete_recognized_mega:
-            val_labels = val_labels[(val_features["conf"]>self.threshhold_megadetector)==False]
-            val_features = val_features[(val_features["conf"]>self.threshhold_megadetector)==False]
-            train_labels = train_labels[(train_features["conf"]>self.threshhold_megadetector)==False]
-            train_features = train_features[(train_features["conf"]>self.threshhold_megadetector)==False]
-        
+            val_labels = val_labels[(
+                val_features["conf"] > self.threshhold_megadetector) == False]
+            val_features = val_features[(
+                val_features["conf"] > self.threshhold_megadetector) == False]
+            train_labels = train_labels[(
+                train_features["conf"] > self.threshhold_megadetector) == False]
+            train_features = train_features[(
+                train_features["conf"] > self.threshhold_megadetector) == False]
 
         self.train = ImagesDataset(
-            train_features, self.basic_transform, train_labels,self.include_megadetector_train,self.threshhold_megadetector)
+            train_features, self.basic_transform, train_labels, self.include_megadetector_train, self.threshhold_megadetector)
         self.val = ImagesDataset(
-            val_features, self.exclude_augmentation_transformer, val_labels,self.include_megadetector_test,self.threshhold_megadetector)
+            val_features, self.exclude_augmentation_transformer, val_labels, self.include_megadetector_test, self.threshhold_megadetector)
 
     def train_dataloader(self, batch_size: int = 128, num_workers: int = 16):
         """
