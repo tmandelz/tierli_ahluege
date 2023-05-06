@@ -288,7 +288,7 @@ class CCV1_Trainer:
         Thomas
         Makes a submission file and saves the models state
         :param str submit_name: name of the file
-        :param int decrease_confidence: devide the output bevor calculating the softmax
+        :param int decrease_confidence: divide the output bevor calculating the softmax
         :param bool ensemble: save models for ensemble model
         """
         self._save_model(submit_name=submit_name)
@@ -305,23 +305,24 @@ class CCV1_Trainer:
         Jan
         Creates the file for the submission
         :param str submit_name: name of the file
-        :param int decrease_confidence: devide the output bevor calculating the softmax
+        :param int decrease_confidence: divide the output bevor calculating the softmax
         :param bool ensemble: save models for ensemble model
         """
         # prediction off the test set
+        prediction_test = 0
         if ensemble:
-            combined_result = 0
+            # combined_result = 0
             for model in self.models:
-                prediction_test, _ = self.predict(
+                prediction_test_fold, _ = self.predict(
                     model, self.test_loader, decrease_confidence=decrease_confidence
                 )
-                combined_result = np.add(prediction_test, combined_result)
-            combined_result /= 5
+                prediction_test = np.add(prediction_test_fold, prediction_test)
+            prediction_test /= 5
         else:
             prediction_test, _ = self.predict(
                 self.model_fold5, self.test_loader, decrease_confidence
             )
-        prediction_test = torch.softmax(prediction_test, dim=1)
+        prediction_test = torch.softmax(torch.from_numpy(prediction_test), dim=1)
         results_df = pd.DataFrame(prediction_test, columns=self.evaluation.classes)
         submit_df = pd.concat(
             [self.data_model.test.data.reset_index()["id"], results_df], axis=1
