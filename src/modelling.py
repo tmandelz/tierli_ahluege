@@ -37,6 +37,7 @@ class CCV1_Trainer:
         data_model: DataModule,
         model: nn.Module,
         device: torch.device = device,
+        random_cv_seeds:list =[42,43,44,45,46]
     ) -> None:
         """
         Jan
@@ -45,7 +46,9 @@ class CCV1_Trainer:
         :param nn.Module model: pytorch deep learning module
         :param torch.device device: used device for training
         """
+        self.random_cv_seeds=random_cv_seeds
         set_seed()
+        
         self.data_model = data_model
         self.test_loader = data_model.test_dataloader()
         self.model = model
@@ -108,6 +111,7 @@ class CCV1_Trainer:
         lr: float = 1e-3,
         decrease_confidence_validation: float = 1.0,
         validate_batch_loss_each: int = 20,
+        cross_validation_random_seeding = False
     ) -> None:
         """
         Jan
@@ -133,6 +137,10 @@ class CCV1_Trainer:
             n_folds = 1
         self.models = []
         for fold in tqdm(range(n_folds), unit="fold", desc="Fold-Iteration"):
+            # set a different random seed for each fold to introduce some variance
+            if cross_validation_random_seeding:
+                set_seed(self.random_cv_seeds[fold])
+            
             # setup a new wandb run for the fold -> fold runs are grouped by name
             self.setup_wandb_run(
                 project_name,
