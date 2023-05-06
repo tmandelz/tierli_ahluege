@@ -313,7 +313,7 @@ class CCV1_Trainer:
             prediction_test, _ = self.predict(
                 self.model_fold5, self.test_loader, decrease_confidence
             )
-        preds = torch.softmax(preds, dim=1)
+        prediction_test = torch.softmax(prediction_test, dim=1)
         results_df = pd.DataFrame(prediction_test, columns=self.evaluation.classes)
         submit_df = pd.concat(
             [self.data_model.test.data.reset_index()["id"], results_df], axis=1
