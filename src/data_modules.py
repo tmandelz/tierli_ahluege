@@ -79,8 +79,8 @@ class DataModule(pl.LightningDataModule):
         test_features_path: str = "./competition_data/testfeatures_megadet_bbox.csv",
         include_megadetector_train: bool = False,
         include_megadetector_test: bool = False,
-        threshhold_megadetector:float=0.5,
-        max_threshhold_megadetector:float = 1.01,
+        threshhold_megadetector: float = 0.5,
+        max_threshhold_megadetector: float = 1.01,
         delete_unrecognized_mega=False,
         delete_recognized_mega=False
     ) -> None:
@@ -115,8 +115,10 @@ class DataModule(pl.LightningDataModule):
             raise ValueError
 
         if self.include_megadetector_test and self.delete_unrecognized_mega:
-           test_features = test_features[test_features["conf"]>self.threshhold_megadetector]
-           test_features = test_features[(test_features["conf"]>self.max_threshhold_megadetector)==False]
+            test_features = test_features[test_features["conf"]
+                                          > self.threshhold_megadetector]
+            test_features = test_features[(
+                test_features["conf"] > self.max_threshhold_megadetector) == False]
 
         if self.delete_recognized_mega:
             test_features = test_features[(
@@ -146,17 +148,25 @@ class DataModule(pl.LightningDataModule):
                                              != fold_number, self.train_labels.columns != "split"]
         # delete files for megadetector
         if self.include_megadetector_test and self.delete_unrecognized_mega:
-            val_labels = val_labels[val_features["conf"]>self.threshhold_megadetector]
-            val_labels = val_labels[(val_features["conf"]>self.max_threshhold_megadetector)==False]
+            val_labels = val_labels[val_features["conf"]
+                                    > self.threshhold_megadetector]
+            val_labels = val_labels[(
+                val_features["conf"] > self.max_threshhold_megadetector) == False]
 
-            val_features = val_features[val_features["conf"]>self.threshhold_megadetector]
-            val_features = val_features[(val_features["conf"]>self.max_threshhold_megadetector)==False]
+            val_features = val_features[val_features["conf"]
+                                        > self.threshhold_megadetector]
+            val_features = val_features[(
+                val_features["conf"] > self.max_threshhold_megadetector) == False]
 
         if self.include_megadetector_train and self.delete_unrecognized_mega:
-            train_labels = train_labels[train_features["conf"]>self.threshhold_megadetector]
-            train_labels = train_labels[(train_features["conf"]>self.max_threshhold_megadetector)==False]
-            train_features = train_features[train_features["conf"]>self.threshhold_megadetector]
-            train_features = train_features[(train_features["conf"]>self.max_threshhold_megadetector)==False]
+            train_labels = train_labels[train_features["conf"]
+                                        > self.threshhold_megadetector]
+            train_labels = train_labels[(
+                train_features["conf"] > self.max_threshhold_megadetector) == False]
+            train_features = train_features[train_features["conf"]
+                                            > self.threshhold_megadetector]
+            train_features = train_features[(
+                train_features["conf"] > self.max_threshhold_megadetector) == False]
 
         if self.delete_recognized_mega:
             val_labels = val_labels[(
