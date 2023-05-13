@@ -28,7 +28,8 @@ def set_seed(seed: int = 42):
 
 
 # %%
-device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+device = torch.device(
+    "cuda") if torch.cuda.is_available() else torch.device("cpu")
 
 
 class CCV1_Trainer:
@@ -37,7 +38,7 @@ class CCV1_Trainer:
         data_model: DataModule,
         model: nn.Module,
         device: torch.device = device,
-        random_cv_seeds:list =[42,43,44,45,46]
+        random_cv_seeds: list = [42, 43, 44, 45, 46]
     ) -> None:
         """
         Jan
@@ -45,10 +46,11 @@ class CCV1_Trainer:
         :param DataModule data_model: instance where the 3 dataloader are available.
         :param nn.Module model: pytorch deep learning module
         :param torch.device device: used device for training
+        :param list random_cv_seeds: what random seeds to use
         """
-        self.random_cv_seeds=random_cv_seeds
+        self.random_cv_seeds = random_cv_seeds
         set_seed()
-        
+
         self.data_model = data_model
         self.test_loader = data_model.test_dataloader()
         self.model = model
@@ -111,7 +113,7 @@ class CCV1_Trainer:
         lr: float = 1e-3,
         decrease_confidence_validation: float = 1.0,
         validate_batch_loss_each: int = 20,
-        cross_validation_random_seeding = False
+        cross_validation_random_seeding=False
     ) -> None:
         """
         Jan
@@ -128,6 +130,7 @@ class CCV1_Trainer:
         :param int lr: learning rate of the model
         :param float decrease_confidence_validation: divide the output bevor calculating the softmax
         :param int validate_batch_loss_each: defines when to log validation loss on the batch
+        :param bool cross_validation_random_seeding: defines whether to use the same seed for each fold or to use different ones
 
         """
         # train loop over folds
@@ -140,7 +143,7 @@ class CCV1_Trainer:
             # set a different random seed for each fold to introduce some variance
             if cross_validation_random_seeding:
                 set_seed(self.random_cv_seeds[fold])
-            
+
             # setup a new wandb run for the fold -> fold runs are grouped by name
             self.setup_wandb_run(
                 project_name,
@@ -202,7 +205,8 @@ class CCV1_Trainer:
                             torch.tensor(pred_val), torch.tensor(label_val)
                         )
 
-                    self.evaluation.per_batch(batch_iter, epoch, loss, loss_val_batch)
+                    self.evaluation.per_batch(
+                        batch_iter, epoch, loss, loss_val_batch)
 
                     # data for evaluation
                     label_train_data = np.concatenate(
@@ -223,7 +227,8 @@ class CCV1_Trainer:
                     self.val_loader,
                     decrease_confidence=decrease_confidence_validation,
                 )
-                loss_val = loss_module(torch.tensor(pred_val), torch.tensor(label_val))
+                loss_val = loss_module(torch.tensor(
+                    pred_val), torch.tensor(label_val))
                 self.evaluation.per_epoch(
                     epoch,
                     loss_train.mean(),
@@ -235,7 +240,8 @@ class CCV1_Trainer:
                 )
 
             # wandb per model
-            self.evaluation.per_model(label_val, pred_val, self.data_model.val.data)
+            self.evaluation.per_model(
+                label_val, pred_val, self.data_model.val.data)
 
             self.models.append(model)
             self.run.finish()
@@ -322,8 +328,10 @@ class CCV1_Trainer:
             prediction_test, _ = self.predict(
                 self.model_fold5, self.test_loader, decrease_confidence
             )
-        prediction_test = torch.softmax(torch.from_numpy(prediction_test), dim=1)
-        results_df = pd.DataFrame(prediction_test, columns=self.evaluation.classes)
+        prediction_test = torch.softmax(
+            torch.from_numpy(prediction_test), dim=1)
+        results_df = pd.DataFrame(
+            prediction_test, columns=self.evaluation.classes)
         submit_df = pd.concat(
             [self.data_model.test.data.reset_index()["id"], results_df], axis=1
         )

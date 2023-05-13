@@ -7,6 +7,7 @@ from torch import nn
 class None_Transform(nn.Module):
     """
     Is used as a None Transform, only forwards the inputs
+    Was necessary to create the whole composition in a nice way when using CCV1Transformer 
     """
 
     def __init__(self) -> None:
@@ -18,7 +19,7 @@ class None_Transform(nn.Module):
 
 # %%
 class CCV1Transformer:
-    """ """
+    """ Class for CCV1 Transformations"""
 
     def __init__(
         self,
@@ -27,7 +28,10 @@ class CCV1Transformer:
         pretrained_transformer: str,
     ) -> None:
         """
-        :param torchvision.transforms data_augmentation_transformer: transfomation steps for data_augmentation
+        Initialises a Transformer class for our project.
+        this class uses presets for a transfer learning approaches and presets for preprocessing approaches.
+        it also uses a parameterized data augmentation set 
+        :param torchvision.transforms data_augmentation_transformer: transformation steps for data_augmentation
         :param str preprocessing_transformer: string which defines a preset for all our transformation steps (resizing etc.)
         :param str pretrained_transformer: string which defines a preset for the pretrained transfer model settings
         """
@@ -35,7 +39,7 @@ class CCV1Transformer:
         self.preprocessing_transformer = preprocessing_transformer
         self.data_augmentation_transformer = data_augmentation_transformer
 
-        # determine preprocessing steps
+        # determine preprocessing steps from presets
         if preprocessing_transformer == "standard":
             self.preprocessing_transformer = transforms.Compose(
                 [
@@ -55,7 +59,7 @@ class CCV1Transformer:
                 ]
             )
 
-        # determine transformation steps for pretrained Models
+        # determine transformation steps for pretrained Models presets
         if pretrained_transformer == "efficientnet":
             self.pretrained_transformer = transforms.Compose(
                 [
@@ -118,10 +122,14 @@ class CCV1Transformer:
                         mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)),
                 ])
 
-    def getCompose(self, turn_off_to_tensor: bool = False):
+    def getCompose(self, turn_off_to_tensor: bool = False) -> transforms.Compose:
         """
+        Returns a Composition of Preprocessing Transformations for different transfer learning and augmentation approaches
         :param turn_off_to_tensor:bool: don't use transforms.ToTensor() for certain augmentations
+        :return: transforms.Compose object representing a sequence of image transformations for the full preprocessing
         """
+        # some augmentations, for example ColorJitter, do not accept a tensor, others do
+        # we eather first turn everything into a tensor or do it after the augmentation transformation
         if turn_off_to_tensor:
             first_trans = None_Transform()
             sec_trans = transforms.ToTensor()
@@ -140,6 +148,5 @@ class CCV1Transformer:
                 self.preprocessing_transformer,
                 # third execute the pretrained model step
                 self.pretrained_transformer,
-                # transforms.ToTensor()
             ]
         )
