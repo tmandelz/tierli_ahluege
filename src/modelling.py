@@ -245,6 +245,8 @@ class CCV1_Trainer:
 
             self.models.append(model)
             self.run.finish()
+            self.model_fold5 = model
+            self._save_model(str(run_group+str(fold)))
         # new model instance for a new k-fold
         self.model_fold5 = model
 
