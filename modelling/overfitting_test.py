@@ -5,7 +5,7 @@ if os.getcwd().endswith("modelling"):
     os.chdir("..")
 
 #%%
-is_cscs_run = True
+is_cscs_run = False
 if is_cscs_run:
     os.chdir("ccv1/tierli_ahluege/")
     print(os.getcwd())
@@ -43,5 +43,5 @@ simple_mlp = CCV1_Trainer(
     base_mlp
 )
 #%%
-simple_mlp.train_model("overfitting_test","base_mlp", batchsize_train_data=4,cross_validation=False, num_epochs=1,test_model=True,lr=0.001,num_workers=0)
+simple_mlp.train_model("overfitting_test","base_mlp", batchsize_train_data=1,cross_validation=True, num_epochs=1,test_model=True,lr=0.1,num_workers=16)
 # %%
