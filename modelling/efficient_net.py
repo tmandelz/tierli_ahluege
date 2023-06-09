@@ -16,8 +16,11 @@ from src.data_modules import DataModule
 from torch import nn
 import torch
 from torchvision import transforms,models
+# %%
 
-#%%
+# %%
+len(list(models.efficientnet_b0(pretrained=True).modules()))
+# %%
 # wandb Notebook Setup
 %env "WANDB_NOTEBOOK_NAME" "ccv1_efficient_net"
 %env WANDB_SILENT=True
