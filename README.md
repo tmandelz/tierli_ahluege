@@ -1,5 +1,5 @@
 
-![class images](https://drivendata-public-assets.s3.amazonaws.com/conservision-banner.jpg)
+![Competition_Logo](https://drivendata-public-assets.s3.amazonaws.com/conservision-banner.jpg)
 
 # Tierli_ahluege ccv1
 
@@ -7,7 +7,7 @@ This project is a part of the [CCV1 Tierli Ahluege Group](https://gitlab.fhnw.ch
 
 This Repository is our solution to the [Competition: Conser-vision Practice Area: Image Classification](https://www.drivendata.org/competitions/87/competition-image-classification-wildlife-conservation/).
 
-#### -- Project Status: Completed
+## Project Status: Completed
 
 ## Project Intro/Objective
 
@@ -42,14 +42,22 @@ This is a practice competition designed to be accessible to participants at all 
 
 ## Getting Started
 
-1. Clone this repo (for help see this [tutorial](https://help.github.com/articles/cloning-a-repository/)).
-2. Raw Data is being kept [here](competition_data)
-3. Explorative Dataanalysis Scripts and Files are being kept [here](Eda)
-4. Megadetector Scripts and data is being kept [here](megadetector)
-5. Models are being kept [here](model_submit)
-6. Source files for training are being kept [here](resource_models)
-7. Source files for pipeline are being kept [here](src)
-8. Demo files are being kept [here](demo)
+* Clone this repo (for help see this [tutorial](https://help.github.com/articles/cloning-a-repository/)).
+* Demo files are being kept [here](demo)
+* Raw Data is being kept [here](competition_data)
+* Explorative Dataanalysis Scripts and Files are being kept [here](Eda)
+* Megadetector Scripts and data is being kept [here](megadetector)
+* Models are being kept [here](model_submit)
+* Models submissions are being kept [here](data_submit)
+* Source files for training are being kept [here](modelling)
+* Source files for pipeline are being kept [here](src)
+
+## Featured Files
+
+* [Training Notebook for the best model](modelling\convnext_megadetector_ensemble.ipynb)
+* [Folder with the best model](model_submit)
+* [Explorative Dataanalysis Notebook](Eda\eda.ipynb)
+* [Demo Model Notebook for the best model](demo\demo_modell.ipynb)
 
 ## Pipenv for Virtual Environment
 
@@ -66,13 +74,6 @@ This is a practice competition designed to be accessible to participants at all 
 * open `cmd`
 * `cd /your/local/github/repofolder/`
 * `pipenv sync`
-
-## Featured Files
-
-* [Training Notebook for the best model](modelling\convnext_megadetector_ensemble.ipynb)
-* [Folder with the best model](model_submit)
-* [Explorative Dataanalysis Notebook](Eda\eda.ipynb)
-* [Demo Model Notebook for the best model](demo\demo_modell.ipynb)
 
 ## Contributing Members
 
