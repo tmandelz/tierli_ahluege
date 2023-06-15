@@ -54,10 +54,10 @@ This is a practice competition designed to be accessible to participants at all 
 
 ## Featured Files
 
-* [Training Notebook for the best model](modelling\convnext_megadetector_ensemble.ipynb)
+* [Training Notebook for the best model](modelling/convnext_megadetector_ensemble.ipynb)
 * [Folder with the best model](model_submit)
-* [Explorative Dataanalysis Notebook](Eda\eda.ipynb)
-* [Demo Model Notebook for the best model](demo\demo_modell.ipynb)
+* [Explorative Dataanalysis Notebook](Eda/eda.ipynb)
+* [Demo Model Notebook for the best model](demo/demo_modell.ipynb)
 
 ## Pipenv for Virtual Environment
 
