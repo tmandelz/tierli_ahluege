@@ -40,6 +40,13 @@ This is a practice competition designed to be accessible to participants at all 
 * Pandas
 * Megadetector
 
+## Featured Files
+
+* To use the best Model with some demo images, use this notebook: [Demo Model Notebook for the best model](demo/demo_modell.ipynb)
+* To inspect the training of the best model, use this notebook: [Training Notebook for the best model](modelling/convnext_megadetector_ensemble.ipynb)
+* To inspect the Explorative Dataanalysis for the whole dataset, use this notebook: [Explorative Dataanalysis Notebook](Eda/eda.ipynb)
+* If you only want the models, refer to this folder: [Folder with the best model](model_submit)
+
 ## Getting Started
 
 * Clone this repo (for help see this [tutorial](https://help.github.com/articles/cloning-a-repository/)).
@@ -52,12 +59,6 @@ This is a practice competition designed to be accessible to participants at all 
 * Source files for training are being kept [here](modelling)
 * Source files for pipeline are being kept [here](src)
 
-## Featured Files
-
-* [Training Notebook for the best model](modelling/convnext_megadetector_ensemble.ipynb)
-* [Folder with the best model](model_submit)
-* [Explorative Dataanalysis Notebook](Eda/eda.ipynb)
-* [Demo Model Notebook for the best model](demo/demo_modell.ipynb)
 
 ## Pipenv for Virtual Environment
 
